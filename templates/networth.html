@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Net Worth - TRAKN</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="icon" type="image/png" href="/static/images/favicon.png">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="fin">TRAK</span><span class="flow">N</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <span class="nav-section-title">Main</span>
+                <a href="/dashboard.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
+                    Dashboard
+                </a>
+                <a href="/transactions.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="5" y1="7" x2="19" y2="7"></line>
+                        <line x1="5" y1="11" x2="16" y2="11"></line>
+                        <path d="M5 7c6 0 7 4 7 6s-2 4-7 4"></path>
+                        <line x1="10" y1="15" x2="17" y2="21"></line>
+                    </svg>
+                    Transactions
+                </a>
+                <!-- FIX: Income link properly closed -->
+                <a href="/income.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="16"></line>
+                        <line x1="8" y1="12" x2="16" y2="12"></line>
+                    </svg>
+                    Income
+                </a>
+                <a href="/expense.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="8" y1="12" x2="16" y2="12"></line>
+                    </svg>
+                    Expenses
+                </a>
+                <a href="/budget.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <circle cx="12" cy="12" r="6"></circle>
+                        <circle cx="12" cy="12" r="2"></circle>
+                    </svg>
+                    Budgets
+                </a>
+                <a href="/recurring.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="17 1 21 5 17 9"></polyline>
+                        <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+                        <polyline points="7 23 3 19 7 15"></polyline>
+                        <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+                    </svg>
+                    Recurring
+                </a>
+                <a href="/goals.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <circle cx="12" cy="12" r="6"></circle>
+                        <circle cx="12" cy="12" r="2"></circle>
+                    </svg>
+                    Goals
+                </a>
+                <a href="/networth.html" class="nav-item active">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="6" width="20" height="12" rx="2"></rect>
+                        <path d="M16 12h4"></path>
+                        <circle cx="16" cy="12" r="1"></circle>
+                    </svg>
+                    Net Worth
+                </a>
+
+                <span class="nav-section-title">Insights</span>
+                <a href="/analytics.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="20" x2="18" y2="10"></line>
+                        <line x1="12" y1="20" x2="12" y2="4"></line>
+                        <line x1="6" y1="20" x2="6" y2="14"></line>
+                    </svg>
+                    Analytics
+                </a>
+                <a href="/calculator.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="4" y="2" width="16" height="20" rx="2"></rect>
+                        <line x1="8" y1="6" x2="16" y2="6"></line>
+                        <circle cx="8" cy="11" r="1"></circle>
+                        <circle cx="12" cy="11" r="1"></circle>
+                        <circle cx="16" cy="11" r="1"></circle>
+                        <circle cx="8" cy="15" r="1"></circle>
+                        <circle cx="12" cy="15" r="1"></circle>
+                        <circle cx="16" cy="15" r="1"></circle>
+                    </svg>
+                    Calculator
+                </a>
+                <a href="/news.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+                        <line x1="7" y1="8" x2="17" y2="8"></line>
+                        <line x1="7" y1="12" x2="17" y2="12"></line>
+                        <line x1="7" y1="16" x2="13" y2="16"></line>
+                        <line x1="4" y1="4" x2="4" y2="20"></line>
+                    </svg>
+                    News
+                </a>
+                <a href="/import.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    Import
+                </a>
+                <a href="/feedback.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z">
+                        </path>
+                    </svg>
+                    Feedback
+                </a>
+                <span class="nav-section-title">Settings</span>
+                <a href="/admin.html" class="nav-item admin-link" style="display: none;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                    Admin
+                </a>
+                <a href="/profile.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    Profile
+                </a>
+                <a href="#" class="nav-item" data-logout>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                    Sign Out
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="page-header">
+                <div class="header-left">
+                    <h1>Net Worth</h1>
+                    <p id="currentMonth"></p>
+                </div>
+                <div class="header-right">
+                    <button class="theme-toggle" data-theme-toggle>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                        <span>Dark</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Net Worth Summary Card -->
+            <!-- FIX: Shows sign (negative net worth was hidden by Math.abs) -->
+            <div class="balance-card" id="netWorthCard" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin-bottom: 1.5rem;">
+                <div class="balance-label" style="color: rgba(255,255,255,0.8);">Total Net Worth</div>
+                <div class="balance-amount" id="netWorthAmount">₹0</div>
+            </div>
+
+            <!-- Two-Column Layout -->
+            <div class="balance-sheet-container">
+
+                <!-- Assets Column -->
+                <div class="card" style="margin-bottom: 1.5rem;">
+                    <div class="card-header">
+                        <h3 class="card-title">Assets</h3>
+                    </div>
+                    <!-- FIX: Empty state kept as sibling, never wiped by innerHTML -->
+                    <div id="assetsList"></div>
+                    <div class="empty-state" id="emptyAssets" style="padding: 2rem;">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                        </svg>
+                        <p>No assets yet.</p>
+                    </div>
+                    <div class="form-actions" style="border-top: 1px solid var(--border-color); padding-top: 1.5rem; margin-top: auto;">
+                        <!-- FIX: onclick calls window-scoped functions defined outside DOMContentLoaded -->
+                        <button class="btn btn-primary" onclick="openAssetModal()">+ Add Asset</button>
+                    </div>
+                </div>
+
+                <!-- Liabilities Column -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Liabilities</h3>
+                    </div>
+                    <div id="liabilitiesList"></div>
+                    <div class="empty-state" id="emptyLiabilities" style="padding: 2rem;">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                        </svg>
+                        <p>No liabilities yet.</p>
+                    </div>
+                    <div class="form-actions" style="border-top: 1px solid var(--border-color); padding-top: 1.5rem; margin-top: auto;">
+                        <button class="btn btn-danger" onclick="openLiabilityModal()">+ Add Liability</button>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+        <!-- Add Asset Modal -->
+        <div class="modal-overlay" id="assetModal" style="display: none;">
+            <div class="modal">
+                <div class="modal-header">
+                    <h2>Add New Asset</h2>
+                    <button class="modal-close" onclick="closeAssetModal()">&times;</button>
+                </div>
+                <form id="addAssetForm">
+                    <div class="form-group">
+                        <label for="assetName">Name</label>
+                        <input type="text" id="assetName" name="name" class="form-control" placeholder="e.g., Savings Account" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="assetValue">Value (₹)</label>
+                        <input type="number" id="assetValue" name="value" class="form-control" placeholder="0.00" step="0.01" min="0" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeAssetModal()">Cancel</button>
+                        <button type="submit" id="addAssetBtn" class="btn btn-primary">Add Asset</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Add Liability Modal -->
+        <div class="modal-overlay" id="liabilityModal" style="display: none;">
+            <div class="modal">
+                <div class="modal-header">
+                    <h2>Add New Liability</h2>
+                    <button class="modal-close" onclick="closeLiabilityModal()">&times;</button>
+                </div>
+                <form id="addLiabilityForm">
+                    <div class="form-group">
+                        <label for="liabilityName">Name</label>
+                        <input type="text" id="liabilityName" name="name" class="form-control" placeholder="e.g., Car Loan" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="liabilityAmount">Amount Owed (₹)</label>
+                        <input type="number" id="liabilityAmount" name="amount" class="form-control" placeholder="0.00" step="0.01" min="0" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeLiabilityModal()">Cancel</button>
+                        <button type="submit" id="addLiabilityBtn" class="btn btn-danger">Add Liability</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="/static/js/app.js"></script>
+    <script>
+        // Show admin link if admin
+        if (localStorage.getItem('trakn-is-admin') === 'true') {
+            const adminLink = document.querySelector('.admin-link');
+            if (adminLink) adminLink.style.display = 'flex';
+        }
+
+        // ── State ──────────────────────────────────────────────────
+        let cachedAssets      = [];
+        let cachedLiabilities = [];
+
+        // ── Modal helpers (window-scoped so onclick attributes work) ──
+        function openAssetModal()      { document.getElementById('assetModal').style.display = 'flex'; }
+        function closeAssetModal()     { document.getElementById('assetModal').style.display = 'none'; document.getElementById('addAssetForm').reset(); }
+        function openLiabilityModal()  { document.getElementById('liabilityModal').style.display = 'flex'; }
+        function closeLiabilityModal() { document.getElementById('liabilityModal').style.display = 'none'; document.getElementById('addLiabilityForm').reset(); }
+
+        // Close modals when clicking outside
+        document.getElementById('assetModal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) closeAssetModal();
+        });
+        document.getElementById('liabilityModal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) closeLiabilityModal();
+        });
+
+        // ── Render ─────────────────────────────────────────────────
+        function renderLists(assets, liabilities) {
+            const assetsList      = document.getElementById('assetsList');
+            const liabilitiesList = document.getElementById('liabilitiesList');
+            const emptyAssets     = document.getElementById('emptyAssets');
+            const emptyLiabilities = document.getElementById('emptyLiabilities');
+
+            // FIX: Render into separate div, never touching the empty-state element
+            if (assets && assets.length > 0) {
+                emptyAssets.style.display = 'none';
+                assetsList.innerHTML = assets.map(a => `
+                    <div class="transaction-item">
+                        <div class="transaction-icon salary">${a.name.charAt(0).toUpperCase()}</div>
+                        <div class="transaction-details">
+                            <div class="transaction-title">${a.name}</div>
+                        </div>
+                        <div class="transaction-amount income">+₹${parseFloat(a.value || 0).toLocaleString('en-IN')}</div>
+                        <div class="table-actions">
+                            <button class="table-action-btn delete" title="Delete" data-id="${a.id}" data-type="asset">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                emptyAssets.style.display = '';
+                assetsList.innerHTML = '';
+            }
+
+            if (liabilities && liabilities.length > 0) {
+                emptyLiabilities.style.display = 'none';
+                liabilitiesList.innerHTML = liabilities.map(l => `
+                    <div class="transaction-item">
+                        <div class="transaction-icon food">${l.name.charAt(0).toUpperCase()}</div>
+                        <div class="transaction-details">
+                            <div class="transaction-title">${l.name}</div>
+                        </div>
+                        <div class="transaction-amount expense">-₹${parseFloat(l.amount || 0).toLocaleString('en-IN')}</div>
+                        <div class="table-actions">
+                            <button class="table-action-btn delete" title="Delete" data-id="${l.id}" data-type="liability">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                emptyLiabilities.style.display = '';
+                liabilitiesList.innerHTML = '';
+            }
+
+            // FIX: Net worth shows sign — negative is red, positive is green
+            const totalAssets      = assets.reduce((sum, a) => sum + parseFloat(a.value || 0), 0);
+            const totalLiabilities = liabilities.reduce((sum, l) => sum + parseFloat(l.amount || 0), 0);
+            const netWorth         = totalAssets - totalLiabilities;
+            const sign             = netWorth < 0 ? '-' : '';
+            document.getElementById('netWorthAmount').textContent = `${sign}₹${Math.abs(netWorth).toLocaleString('en-IN')}`;
+
+            // Tint card red if net worth is negative
+            const card = document.getElementById('netWorthCard');
+            card.style.background = netWorth < 0
+                ? 'linear-gradient(135deg, #e53e3e 0%, #9b2335 100%)'
+                : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+        }
+
+        // ── Event delegation for delete buttons ────────────────────
+        document.getElementById('assetsList').addEventListener('click', async (e) => {
+            const btn = e.target.closest('[data-type="asset"]');
+            if (!btn) return;
+            if (!confirm('Delete this asset?')) return;
+            try {
+                await FinFlow.BalanceSheet.deleteAsset(btn.dataset.id);
+                FinFlow.Toast.success('Asset deleted.');
+                await loadData();
+            } catch (err) {
+                FinFlow.Toast.error('Failed to delete asset.');
+            }
+        });
+
+        document.getElementById('liabilitiesList').addEventListener('click', async (e) => {
+            const btn = e.target.closest('[data-type="liability"]');
+            if (!btn) return;
+            if (!confirm('Delete this liability?')) return;
+            try {
+                await FinFlow.BalanceSheet.deleteLiability(btn.dataset.id);
+                FinFlow.Toast.success('Liability deleted.');
+                await loadData();
+            } catch (err) {
+                FinFlow.Toast.error('Failed to delete liability.');
+            }
+        });
+
+        // ── Load data ──────────────────────────────────────────────
+        async function loadData() {
+            try {
+                const [assets, liabilities] = await Promise.all([
+                    FinFlow.BalanceSheet.getAssets(),
+                    FinFlow.BalanceSheet.getLiabilities()
+                ]);
+                cachedAssets      = assets      || [];
+                cachedLiabilities = liabilities || [];
+                renderLists(cachedAssets, cachedLiabilities);
+            } catch (error) {
+                console.error(error);
+                FinFlow.Toast.error('Failed to load data.');
+            }
+        }
+
+        // ── Form submissions ───────────────────────────────────────
+        document.getElementById('addAssetForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                name:  document.getElementById('assetName').value.trim(),
+                value: parseFloat(document.getElementById('assetValue').value)
+            };
+            const btn = document.getElementById('addAssetBtn');
+            btn.disabled = true;
+            btn.textContent = 'Adding...';
+            try {
+                await FinFlow.BalanceSheet.addAsset(data);
+                closeAssetModal();
+                await loadData();
+                FinFlow.Toast.success('Asset added!');
+            } catch (error) {
+                FinFlow.Toast.error(error.message || 'Failed to add asset.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Add Asset';
+            }
+        });
+
+        document.getElementById('addLiabilityForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                name:   document.getElementById('liabilityName').value.trim(),
+                amount: parseFloat(document.getElementById('liabilityAmount').value)
+            };
+            const btn = document.getElementById('addLiabilityBtn');
+            btn.disabled = true;
+            btn.textContent = 'Adding...';
+            try {
+                await FinFlow.BalanceSheet.addLiability(data);
+                closeLiabilityModal();
+                await loadData();
+                FinFlow.Toast.success('Liability added!');
+            } catch (error) {
+                FinFlow.Toast.error(error.message || 'Failed to add liability.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Add Liability';
+            }
+        });
+
+        // ── Init ───────────────────────────────────────────────────
+        document.getElementById('currentMonth').textContent =
+            new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+
+        loadData();
+    </script>
+</body>
+</html>

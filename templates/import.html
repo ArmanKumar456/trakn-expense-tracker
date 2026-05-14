@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Import Data - TRAKN</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="icon" type="image/png" href="/static/images/favicon.png">
+    <style>
+        .import-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .import-card {
+            background: var(--bg-white);
+            border-radius: var(--radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 1.5rem;
+        }
+        
+        .import-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .import-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 123, 255, 0.1);
+            color: var(--blue-transfer);
+        }
+        
+        .import-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .import-subtitle {
+            color: var(--text-gray);
+        }
+        
+        .upload-zone {
+            border: 2px dashed var(--border-color);
+            border-radius: var(--radius);
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+        }
+        
+        .upload-zone:hover {
+            border-color: var(--primary-yellow);
+            background: rgba(255, 215, 0, 0.05);
+        }
+        
+        .upload-zone.drag-over {
+            border-color: var(--primary-yellow);
+            background: rgba(255, 215, 0, 0.1);
+        }
+        
+        .upload-zone-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 1rem;
+            color: var(--primary-yellow);
+        }
+        
+        .upload-zone-text {
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+        
+        .upload-zone-hint {
+            color: var(--text-gray);
+            font-size: 0.9rem;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .format-section {
+            margin-top: 2rem;
+        }
+        
+        .format-title {
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        
+        .format-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .format-table th,
+        .format-table td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .format-table th {
+            background: var(--bg-light);
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        
+        .format-table code {
+            background: var(--bg-light);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+        
+        .progress-container {
+            margin-top: 1.5rem;
+            display: none;
+        }
+        
+        .progress-container.active {
+            display: block;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: var(--primary-yellow);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        
+        .progress-text {
+            font-size: 0.9rem;
+            color: var(--text-gray);
+        }
+        
+        .sample-download {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            color: var(--blue-transfer);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .sample-download:hover {
+            text-decoration: underline;
+        }
+        
+        .recent-imports {
+            margin-top: 2rem;
+        }
+        
+        .import-history-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--bg-light);
+            border-radius: var(--radius-sm);
+            margin-bottom: 0.5rem;
+        }
+        
+        .import-history-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--green-income);
+            color: white;
+        }
+        
+        .import-history-icon.failed {
+            background: var(--red-expense);
+        }
+        
+        .import-history-details {
+            flex: 1;
+        }
+        
+        .import-history-name {
+            font-weight: 500;
+        }
+        
+        .import-history-meta {
+            font-size: 0.85rem;
+            color: var(--text-gray);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="fin">TRAK</span><span class="flow">N</span>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <span class="nav-section-title">Main</span>
+                <a href="/dashboard.html" class="nav-item ">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
+                    Dashboard
+                </a>
+                <a href="/transactions.html" class="nav-item ">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="7" x2="19" y2="7"></line>
+                    <line x1="5" y1="11" x2="16" y2="11"></line>
+                    <path d="M5 7c6 0 7 4 7 6s-2 4-7 4"></path>
+                    <line x1="10" y1="15" x2="17" y2="21"></line>
+                    </svg>
+                    Transactions
+                </a>
+                <a href="/income.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="16"></line>
+                        <line x1="8" y1="12" x2="16" y2="12"></line>
+                    </svg>
+                    Income
+                <a href="/expense.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="8" y1="12" x2="16" y2="12"></line>
+                    </svg>
+                    Expenses
+                </a>
+                
+                </a>
+                <a href="/budget.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <circle cx="12" cy="12" r="6"></circle>
+                        <circle cx="12" cy="12" r="2"></circle>
+                    </svg>
+                    Budgets
+                </a>
+                <a href="/recurring.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="17 1 21 5 17 9"></polyline>
+                    <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+                    <polyline points="7 23 3 19 7 15"></polyline>
+                    <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+                    </svg>
+                    Recurring
+                </a>
+                <a href="/goals.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <circle cx="12" cy="12" r="6"></circle>
+                    <circle cx="12" cy="12" r="2"></circle>
+                    </svg>
+                    Goals
+                </a>
+                <a href="/networth.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="6" width="20" height="12" rx="2"></rect>
+                    <path d="M16 12h4"></path>
+                    <circle cx="16" cy="12" r="1"></circle>
+                    </svg>
+                    Net Worth
+                </a>
+                
+                <span class="nav-section-title">Insights</span>
+                <a href="/analytics.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="20" x2="18" y2="10"></line>
+                        <line x1="12" y1="20" x2="12" y2="4"></line>
+                        <line x1="6" y1="20" x2="6" y2="14"></line>
+                    </svg>
+                    Analytics
+                </a>
+                <a href="/calculator.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="4" y="2" width="16" height="20" rx="2"></rect>
+                    <line x1="8" y1="6" x2="16" y2="6"></line>
+                    <circle cx="8" cy="11" r="1"></circle>
+                    <circle cx="12" cy="11" r="1"></circle>
+                    <circle cx="16" cy="11" r="1"></circle>
+                    <circle cx="8" cy="15" r="1"></circle>
+                    <circle cx="12" cy="15" r="1"></circle>
+                    <circle cx="16" cy="15" r="1"></circle>
+                    </svg>
+                    Calculator
+                </a>
+                
+                <a href="/news.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+                    <line x1="7" y1="8" x2="17" y2="8"></line>
+                    <line x1="7" y1="12" x2="17" y2="12"></line>
+                    <line x1="7" y1="16" x2="13" y2="16"></line>
+                    <line x1="4" y1="4" x2="4" y2="20"></line>
+                    </svg>
+                    News
+                </a>
+                <a href="/import.html" class="nav-item active">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    Import
+                </a>
+                <a href="/feedback.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z">
+                        </path>
+                    </svg>
+                    Feedback
+                </a>
+                <span class="nav-section-title">Settings</span>
+                <a href="/admin.html" class="nav-item admin-link" style="display: none;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                    Admin
+                </a>
+                <a href="/profile.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    Profile
+                </a>
+                <a href="#" class="nav-item" data-logout>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                    Sign Out
+                </a>
+            </nav>
+        </aside>
+
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="page-header">
+                <div class="header-left">
+                    <h1>Import & Export</h1>
+                    <p>Import transactions from CSV files or export your data</p>
+                </div>
+                <div class="header-right">
+                    <button class="theme-toggle" data-theme-toggle>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                        <span>Dark</span>
+                    </button>
+                </div>
+            </header>
+
+            <div class="import-container">
+                <!-- Import Section -->
+                <div class="import-card">
+                    <div class="import-header">
+                        <div class="import-icon">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="import-title">Import Transactions</h2>
+                            <p class="import-subtitle">Upload a CSV file to import your transactions</p>
+                        </div>
+                    </div>
+
+                    <div class="upload-zone" id="uploadZone">
+                        <svg class="upload-zone-icon" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                            <line x1="12" y1="11" x2="12" y2="17"></line>
+                            <line x1="9" y1="14" x2="15" y2="14"></line>
+                        </svg>
+                        <div class="upload-zone-text">Click to upload or drag and drop</div>
+                        <div class="upload-zone-hint">Supports CSV files up to 10MB</div>
+                        <input type="file" class="file-input" id="fileInput" accept=".csv">
+                    </div>
+
+                    <div class="progress-container" id="progressContainer">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                        </div>
+                        <div class="progress-text" id="progressText">Uploading...</div>
+                    </div>
+
+                    <a href="#" class="sample-download" onclick="downloadSample()">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        Download Sample CSV Template
+                    </a>
+
+                    <!-- Format Guide -->
+                    <div class="format-section">
+                        <h3 class="format-title">CSV Format Guide</h3>
+                        <table class="format-table">
+                            <thead>
+                                <tr>
+                                    <th>Column</th>
+                                    <th>Required</th>
+                                    <th>Description</th>
+                                    <th>Example</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>date</code></td>
+                                    <td>Yes</td>
+                                    <td>Transaction date (YYYY-MM-DD or DD/MM/YYYY)</td>
+                                    <td>2024-01-15</td>
+                                </tr>
+                                <tr>
+                                    <td><code>title</code></td>
+                                    <td>Yes</td>
+                                    <td>Description of the transaction</td>
+                                    <td>Grocery Shopping</td>
+                                </tr>
+                                <tr>
+                                    <td><code>amount</code></td>
+                                    <td>Yes</td>
+                                    <td>Transaction amount (number only)</td>
+                                    <td>1500.00</td>
+                                </tr>
+                                <tr>
+                                    <td><code>type</code></td>
+                                    <td>Yes</td>
+                                    <td>Either "income" or "expense"</td>
+                                    <td>expense</td>
+                                </tr>
+                                <tr>
+                                    <td><code>category</code></td>
+                                    <td>No</td>
+                                    <td>Category for the transaction</td>
+                                    <td>Food</td>
+                                </tr>
+                                <tr>
+                                    <td><code>notes</code></td>
+                                    <td>No</td>
+                                    <td>Additional notes</td>
+                                    <td>Weekly groceries</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Export Section -->
+                <div class="import-card">
+                    <div class="import-header">
+                        <div class="import-icon" style="background: rgba(40, 167, 69, 0.1); color: var(--green-income);">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="import-title">Export Transactions</h2>
+                            <p class="import-subtitle">Download all your transactions as CSV or JSON</p>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem;">
+                        <button class="btn btn-primary" onclick="exportData('csv')">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Export as CSV
+                        </button>
+                        <button class="btn btn-secondary" onclick="exportData('json')">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                            </svg>
+                            Export as JSON
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+    <script>
+        // Check if user is admin and show admin link
+        const isAdmin = localStorage.getItem('trakn-is-admin') === 'true';
+        if (isAdmin) {
+            document.querySelector('.admin-link').style.display = 'flex';
+        }
+
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+
+        // Click to upload
+        uploadZone.addEventListener('click', () => fileInput.click());
+
+        // Drag and drop
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('drag-over');
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('drag-over');
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('drag-over');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileUpload(files[0]);
+            }
+        });
+
+        // File input change
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileUpload(e.target.files[0]);
+            }
+        });
+
+        // Handle file upload
+        async function handleFileUpload(file) {
+            if (!file.name.toLowerCase().endsWith('.csv')) {
+                FinFlow.Toast.error('Please upload a CSV file');
+                return;
+            }
+
+            if (file.size > 10 * 1024 * 1024) {
+                FinFlow.Toast.error('File size must be less than 10MB');
+                return;
+            }
+
+            progressContainer.classList.add('active');
+            progressFill.style.width = '0%';
+            progressText.textContent = 'Uploading...';
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const token = localStorage.getItem('trakn-token');
+                
+                progressFill.style.width = '30%';
+                progressText.textContent = 'Processing...';
+
+                const response = await fetch('/api/transactions/import', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+
+                progressFill.style.width = '90%';
+                const result = await response.json();
+
+                if (response.ok) {
+                    progressFill.style.width = '100%';
+                    progressText.textContent = `Successfully imported ${result.count} transactions!`;
+                    FinFlow.Toast.success(`Imported ${result.count} transactions!`);
+                    
+                    if (result.errors && result.errors.length > 0) {
+                        console.log('Import warnings:', result.errors);
+                        FinFlow.Toast.warning(`${result.errors.length} rows had issues`);
+                    }
+                } else {
+                    throw new Error(result.error || 'Import failed');
+                }
+            } catch (error) {
+                FinFlow.Toast.error(error.message || 'Failed to import transactions');
+                progressText.textContent = 'Import failed';
+                progressFill.style.width = '0%';
+            }
+
+            // Reset file input
+            fileInput.value = '';
+            
+            // Hide progress after delay
+            setTimeout(() => {
+                progressContainer.classList.remove('active');
+            }, 3000);
+        }
+
+        // Download sample CSV
+        function downloadSample() {
+            const sampleData = `date,title,amount,type,category,notes
+2024-01-15,Grocery Shopping,1500.00,expense,Food,Weekly groceries
+2024-01-14,Salary,50000.00,income,Salary,Monthly salary
+2024-01-13,Electric Bill,2000.00,expense,Utilities,January bill
+2024-01-12,Coffee,150.00,expense,Food,Morning coffee
+2024-01-11,Freelance Work,10000.00,income,Freelance,Web design project`;
+
+            const blob = new Blob([sampleData], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'trakn-sample-import.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            FinFlow.Toast.success('Sample CSV downloaded!');
+        }
+
+        // Export data
+        async function exportData(format) {
+            try {
+                const token = localStorage.getItem('trakn-token');
+
+                if (format === 'csv') {
+                    const response = await fetch('/api/transactions/export', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (!response.ok) throw new Error('Export failed');
+
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `trakn-transactions-${new Date().toISOString().split('T')[0]}.csv`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+
+                    FinFlow.Toast.success('Transactions exported to CSV!');
+                } else {
+                    const response = await fetch('/api/transactions', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (!response.ok) throw new Error('Export failed');
+
+                    const data = await response.json();
+                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `trakn-transactions-${new Date().toISOString().split('T')[0]}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+
+                    FinFlow.Toast.success('Transactions exported to JSON!');
+                }
+            } catch (error) {
+                FinFlow.Toast.error(error.message || 'Failed to export transactions');
+            }
+        }
+    </script>
+</body>
+</html>

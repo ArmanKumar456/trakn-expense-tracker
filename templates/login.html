@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - TRAKN</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="icon" type="image/png" href="/static/images/favicon.png">
+</head>
+<body>
+    <div class="auth-container" id="loginContainer">
+        <div class="auth-card">
+            <!-- Close Button -->
+            <a href="/index.html" class="modal-close" style="text-decoration: none;">&times;</a>
+            
+            <!-- Header -->
+            <div class="auth-header">
+                <div class="logo">
+                    <span class="fin">TRAK</span><span class="flow">N</span>
+                </div>
+                <h2>Welcome back</h2>
+                <p>Sign in to your financial command center</p>
+            </div>
+            
+            <!-- Login Form -->
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email" 
+                        class="form-control" 
+                        placeholder="you@example.com"
+                        required
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="input-with-icon">
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password" 
+                            class="form-control" 
+                            placeholder="Enter your password"
+                            required
+                        >
+                        <span class="icon" onclick="togglePassword('password', 'eyeIcon')">
+                            <svg id="eyeIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="form-footer">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="remember">
+                        Remember me
+                    </label>
+                    <a href="#">Forgot password?</a>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%;" id="loginBtn">
+                    Sign In
+                </button>
+            </form>
+            
+            <!-- Footer -->
+            <div class="auth-footer">
+                No account? <a href="#" id="showRegister">Create one free</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Form -->
+    <div class="auth-container" id="registerContainer" style="display: none;">
+        <div class="auth-card">
+            <button class="modal-close" onclick="showLogin()">&times;</button>
+            
+            <div class="auth-header">
+                <div class="logo">
+                    <span class="fin">TRAK</span><span class="flow">N</span>
+                </div>
+                <h2>Create account</h2>
+                <p>Start your financial journey today</p>
+            </div>
+            
+            <form id="registerForm">
+                <div class="form-group">
+                    <label for="regName">Full Name</label>
+                    <input 
+                        type="text" 
+                        id="regName" 
+                        name="name" 
+                        class="form-control" 
+                        placeholder="John Doe"
+                        required
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label for="regEmail">Email</label>
+                    <input 
+                        type="email" 
+                        id="regEmail" 
+                        name="email" 
+                        class="form-control" 
+                        placeholder="you@example.com"
+                        required
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label for="regPhone">Phone Number (Optional)</label>
+                    <input 
+                        type="tel" 
+                        id="regPhone" 
+                        name="phone" 
+                        class="form-control" 
+                        placeholder="+91 9876543210"
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label for="regPassword">Password</label>
+                    <div class="input-with-icon">
+                        <input 
+                            type="password" 
+                            id="regPassword" 
+                            name="password" 
+                            class="form-control" 
+                            placeholder="Create a strong password"
+                            required
+                            minlength="8"
+                        >
+                        <span class="icon" onclick="togglePassword('regPassword', 'regEyeIcon')">
+                            <svg id="regEyeIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="regConfirmPassword">Confirm Password</label>
+                    <input 
+                        type="password" 
+                        id="regConfirmPassword" 
+                        name="confirmPassword" 
+                        class="form-control" 
+                        placeholder="Confirm your password"
+                        required
+                    >
+                </div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%;" id="registerBtn">
+                    Create Account
+                </button>
+            </form>
+            
+            <div class="auth-footer">
+                Already have an account? <a href="#" onclick="showLogin()">Sign in</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+    <script>
+        // Toggle password visibility
+        function togglePassword(inputId, iconId) {
+            const passwordInput = document.getElementById(inputId);
+            const eyeIcon = document.getElementById(iconId);
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                eyeIcon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
+            } else {
+                passwordInput.type = 'password';
+                eyeIcon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+            }
+        }
+
+        // Show register form
+        function showRegister() {
+            document.getElementById('loginContainer').style.display = 'none';
+            document.getElementById('registerContainer').style.display = 'flex';
+        }
+
+        // Show login form
+        function showLogin() {
+            document.getElementById('registerContainer').style.display = 'none';
+            document.getElementById('loginContainer').style.display = 'flex';
+        }
+
+        // Login form submission
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const btn = document.getElementById('loginBtn');
+            
+            btn.disabled = true;
+            btn.textContent = 'Signing in...';
+            
+            try {
+                const response = await FinFlow.API.post('/auth/login', { email, password });
+                
+                // Store token and user data
+                localStorage.setItem('trakn-token', response.token);
+                localStorage.setItem('trakn-user', JSON.stringify(response.user));
+                
+                // Set admin flag
+                if (response.user && response.user.role === 'admin') {
+                    localStorage.setItem('trakn-is-admin', 'true');
+                } else {
+                    localStorage.setItem('trakn-is-admin', 'false');
+                }
+                
+                FinFlow.Toast.success('Login successful!');
+                
+                setTimeout(() => {
+                    window.location.href = '/dashboard.html';
+                }, 1000);
+            } catch (error) {
+                FinFlow.Toast.error(error.message || 'Invalid credentials');
+                btn.textContent = 'Sign In';
+                btn.disabled = false;
+            }
+        });
+
+        // Register form submission
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('regName').value;
+            const email = document.getElementById('regEmail').value;
+            const phone = document.getElementById('regPhone').value;
+            const password = document.getElementById('regPassword').value;
+            const confirmPassword = document.getElementById('regConfirmPassword').value;
+            const btn = document.getElementById('registerBtn');
+            
+            if (password !== confirmPassword) {
+                FinFlow.Toast.error('Passwords do not match');
+                return;
+            }
+            
+            if (password.length < 8) {
+                FinFlow.Toast.error('Password must be at least 8 characters');
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.textContent = 'Creating account...';
+            
+            try {
+                const response = await FinFlow.API.post('/auth/register', { name, email, phone, password });
+                
+                // Store token and user data
+                localStorage.setItem('trakn-token', response.token);
+                localStorage.setItem('trakn-user', JSON.stringify(response.user));
+                localStorage.setItem('trakn-is-admin', 'false');
+                
+                FinFlow.Toast.success('Account created successfully!');
+                
+                setTimeout(() => {
+                    window.location.href = '/welcome.html';
+                }, 1000);
+            } catch (error) {
+                FinFlow.Toast.error(error.message || 'Registration failed');
+                btn.textContent = 'Create Account';
+                btn.disabled = false;
+            }
+        });
+
+        // Toggle between login and register
+        document.getElementById('showRegister').addEventListener('click', (e) => {
+            e.preventDefault();
+            showRegister();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transactions - TRAKN</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="icon" type="image/png" href="/static/images/favicon.png">
+    <style>
+        .time-badge {
+            display: inline-block;
+            font-size: 0.72rem;
+            color: var(--text-gray);
+            background: var(--bg-light);
+            border-radius: 4px;
+            padding: 1px 6px;
+            margin-top: 2px;
+        }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo"><span class="fin">TRAK</span><span class="flow">N</span></div>
+        </div>
+        <nav class="sidebar-nav">
+            <span class="nav-section-title">Main</span>
+            <a href="/dashboard.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>Dashboard</a>
+            <a href="/transactions.html" class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="7" x2="19" y2="7"></line><line x1="5" y1="11" x2="16" y2="11"></line><path d="M5 7c6 0 7 4 7 6s-2 4-7 4"></path><line x1="10" y1="15" x2="17" y2="21"></line></svg>Transactions</a>
+            <a href="/income.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>Income</a>
+            <a href="/expense.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="8" y1="12" x2="16" y2="12"></line></svg>Expenses</a>
+            <a href="/budget.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>Budgets</a>
+            <a href="/recurring.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>Recurring</a>
+            <a href="/goals.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>Goals</a>
+            <a href="/networth.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"></rect><path d="M16 12h4"></path><circle cx="16" cy="12" r="1"></circle></svg>Net Worth</a>
+            <span class="nav-section-title">Insights</span>
+            <a href="/analytics.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>Analytics</a>
+            <a href="/calculator.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><circle cx="8" cy="11" r="1"></circle><circle cx="12" cy="11" r="1"></circle><circle cx="16" cy="11" r="1"></circle><circle cx="8" cy="15" r="1"></circle><circle cx="12" cy="15" r="1"></circle><circle cx="16" cy="15" r="1"></circle></svg>Calculator</a>
+            <a href="/news.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"></rect><line x1="7" y1="8" x2="17" y2="8"></line><line x1="7" y1="12" x2="17" y2="12"></line><line x1="7" y1="16" x2="13" y2="16"></line><line x1="4" y1="4" x2="4" y2="20"></line></svg>News</a>
+            <a href="/import.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>Import</a>
+            <a href="/feedback.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z">
+                        </path>
+                    </svg>
+                    Feedback
+                </a>
+            <span class="nav-section-title">Settings</span>
+            <a href="/admin.html" class="nav-item admin-link" style="display:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>Admin</a>
+            <a href="/profile.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>Profile</a>
+            <a href="#" class="nav-item" data-logout><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>Sign Out</a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="page-header">
+            <div class="header-left">
+                <h1>Transactions</h1>
+                <p>Manage your income and expenses</p>
+            </div>
+            <div class="header-right">
+                <button class="theme-toggle" data-theme-toggle>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                    <span>Dark</span>
+                </button>
+                <a href="/expense.html" class="btn btn-expense btn-sm">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    Add Expense
+                </a>
+                <a href="/income.html" class="btn btn-income btn-sm">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    Add Income
+                </a>
+            </div>
+        </header>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+            <div class="filter-group">
+                <label class="filter-label">Type:</label>
+                <select class="filter-select" id="filterType">
+                    <option value="">All</option>
+                    <option value="income">Income</option>
+                    <option value="expense">Expense</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Category:</label>
+                <select class="filter-select" id="filterCategory">
+                    <option value="">All Categories</option>
+                    <option value="food">Food & Dining</option>
+                    <option value="transport">Transport</option>
+                    <option value="bills">Bills & Utilities</option>
+                    <option value="shopping">Shopping</option>
+                    <option value="entertainment">Entertainment</option>
+                    <option value="health">Health</option>
+                    <option value="education">Education</option>
+                    <option value="housing">Housing</option>
+                    <option value="salary">Salary</option>
+                    <option value="freelance">Freelance</option>
+                    <option value="business">Business</option>
+                    <option value="investment">Investment</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Period:</label>
+                <select class="filter-select" id="filterPeriod">
+                    <option value="">All Time</option>
+                    <option value="today">Today</option>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                    <option value="year">This Year</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Transactions Table -->
+        <div class="table-container">
+            <div class="table-header">
+                <div class="table-search">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+                    <input type="text" placeholder="Search transactions..." id="searchInput">
+                </div>
+                <div style="display:flex;gap:0.5rem;">
+                    <button class="btn btn-secondary btn-sm" onclick="exportTransactions()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        Export
+                    </button>
+                </div>
+            </div>
+
+            <table class="table" id="transactionsTable">
+                <thead>
+                    <tr>
+                        <th>Transaction</th>
+                        <th>Category</th>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Amount</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="transactionsBody"></tbody>
+            </table>
+
+            <div class="empty-state" id="emptyState">
+                <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                <h3>No transactions yet</h3>
+                <p>Start by adding your first transaction</p>
+                <a href="/expense.html" class="btn btn-expense btn-sm">
+                    
+                    Add Expense
+                </a>
+                <a href="/income.html" class="btn btn-income btn-sm">
+                   
+                    Add Income
+                </a>
+            </div>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="summary-stats" style="margin-top:1.5rem;">
+            <div class="summary-card income">
+                <div class="summary-label">Total Income</div>
+                <div class="summary-value" id="totalIncome">₹0</div>
+            </div>
+            <div class="summary-card expense">
+                <div class="summary-label">Total Expenses</div>
+                <div class="summary-value" id="totalExpense">₹0</div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script src="/static/js/app.js"></script>
+<script>
+if (localStorage.getItem('trakn-is-admin') === 'true') {
+    document.querySelector('.admin-link').style.display = 'flex';
+}
+
+let allTransactions = [];
+
+// ── FIXED: Safe date parser — never uses new Date("YYYY-MM-DD") ──
+function formatDateSafe(dateStr) {
+    if (!dateStr) return '—';
+    const str = String(dateStr);
+    // Handle YYYY-MM-DD or ISO
+    const iso = str.includes('T') ? str.split('T')[0] : str.split(' ')[0];
+    const parts = iso.split('-').map(Number);
+    if (parts.length === 3 && parts[0] > 1000) {
+        const [y, m, d] = parts;
+        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        return `${d} ${months[m-1]} ${y}`;
+    }
+    // Fallback: parse whatever string we have
+    const d = new Date(str);
+    if (!isNaN(d)) {
+        return d.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+    }
+    return '—';
+}
+
+function formatTimeSafe(createdAt) {
+    if (!createdAt) return '';
+    const str = String(createdAt);
+    // Extract time part from "2026-05-03 18:43:51" or ISO
+    const timePart = str.includes('T') ? str.split('T')[1] : str.split(' ')[1];
+    if (!timePart) return '';
+    const colonParts = timePart.split(':');
+    if (colonParts.length < 2) return '';
+    const hh = parseInt(colonParts[0], 10);
+    const mm = parseInt(colonParts[1], 10);
+    // Validate both are real numbers
+    if (isNaN(hh) || isNaN(mm)) return '';
+    const ampm = hh >= 12 ? 'PM' : 'AM';
+    const h12  = hh % 12 || 12;
+    return `${h12}:${String(mm).padStart(2,'0')} ${ampm}`;
+}
+
+const CAT_NAMES = {
+    food:'Food & Dining', transport:'Transport', bills:'Bills & Utilities',
+    shopping:'Shopping', entertainment:'Entertainment', health:'Health & Medical',
+    education:'Education', housing:'Housing & Rent', personal:'Personal Care',
+    travel:'Travel', salary:'Salary', freelance:'Freelance', business:'Business',
+    investment:'Investment', rental:'Rental Income', bonus:'Bonus', gift:'Gift', other:'Other'
+};
+
+// ── Render ─────────────────────────────────────────────────
+function renderTransactions(transactions) {
+    const tbody = document.getElementById('transactionsBody');
+    tbody.innerHTML = '';
+
+    if (!transactions.length) return;
+
+    transactions.forEach(t => {
+        const isIncome    = t.type === 'income';
+        const amountColor = isIncome ? 'var(--green-income,#28a745)' : 'var(--red-expense,#dc3545)';
+        const prefix      = isIncome ? '+' : '-';
+        const catName     = CAT_NAMES[t.category] || (t.category ? t.category.charAt(0).toUpperCase() + t.category.slice(1) : 'Other');
+        const dateStr     = formatDateSafe(t.date);
+        const timeStr     = formatTimeSafe(t.created_at);
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>
+                <div style="display:flex;align-items:center;gap:0.75rem;">
+                    <div class="transaction-icon ${isIncome ? 'salary' : 'food'}" style="background:${isIncome ? 'rgba(40,167,69,0.12)' : 'rgba(220,53,69,0.12)'};color:${amountColor};width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.95rem;flex-shrink:0;">
+                        ${(t.category || 'T').charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                        <div style="font-weight:600;font-size:0.92rem;">${t.title}</div>
+                        <div style="font-size:0.78rem;color:var(--text-gray);">${t.notes || ''}</div>
+                    </div>
+                </div>
+            </td>
+            <td style="font-size:0.88rem;">${catName}</td>
+            <td>
+                <div style="font-size:0.88rem;font-weight:500;">${dateStr}</div>
+                ${timeStr ? `<div class="time-badge">🕐 ${timeStr}</div>` : ''}
+            </td>
+            <td><span class="status-badge ${isIncome ? 'active' : 'inactive'}">${isIncome ? 'Income' : 'Expense'}</span></td>
+            <td style="color:${amountColor};font-weight:700;font-size:0.95rem;">${prefix}₹${parseFloat(t.amount).toLocaleString('en-IN', {minimumFractionDigits:2})}</td>
+            <td>
+                <div class="table-actions">
+                    <button class="table-action-btn delete" title="Delete" onclick="deleteTransaction(${t.id})">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </button>
+                </div>
+            </td>`;
+        tbody.appendChild(row);
+    });
+}
+
+function updateSummary(transactions) {
+    let totalIncome = 0, totalExpense = 0;
+    transactions.forEach(t => {
+        if (t.type === 'income') totalIncome  += parseFloat(t.amount) || 0;
+        else                     totalExpense += parseFloat(t.amount) || 0;
+    });
+    document.getElementById('totalIncome').textContent  = FinFlow.Utils.formatCurrency(totalIncome);
+    document.getElementById('totalExpense').textContent = FinFlow.Utils.formatCurrency(totalExpense);
+}
+
+async function exportTransactions() {
+    try {
+        await FinFlow.Transactions.exportCSV();
+        FinFlow.Toast.success('Transactions exported!');
+    } catch(err) {
+        FinFlow.Toast.error('Failed to export: ' + (err.message || ''));
+    }
+}
+
+async function deleteTransaction(id) {
+    if (!confirm('Delete this transaction?')) return;
+    try {
+        await FinFlow.Transactions.delete(id);
+        FinFlow.Toast.success('Transaction deleted');
+        loadTransactions();
+    } catch(err) {
+        FinFlow.Toast.error('Failed to delete');
+    }
+}
+
+// ── FIXED: Date filtering uses safe parsing ───────────────
+function applyFiltersAndRender() {
+    const typeFilter     = document.getElementById('filterType').value;
+    const categoryFilter = document.getElementById('filterCategory').value;
+    const periodFilter   = document.getElementById('filterPeriod').value;
+    const searchTerm     = document.getElementById('searchInput').value.toLowerCase();
+
+    let filtered = [...allTransactions];
+
+    if (typeFilter)     filtered = filtered.filter(t => t.type === typeFilter);
+    if (categoryFilter) filtered = filtered.filter(t => (t.category || 'other') === categoryFilter);
+
+    if (periodFilter) {
+        const today = new Date(); today.setHours(12,0,0,0);
+
+        filtered = filtered.filter(t => {
+            // FIXED: parse date safely
+            const raw = String(t.date).split('T')[0];
+            const [y, m, d] = raw.split('-').map(Number);
+            if (!y) return true;
+            const tDate = new Date(y, m - 1, d, 12, 0, 0);
+
+            switch (periodFilter) {
+                case 'today': {
+                    return tDate.toDateString() === today.toDateString();
+                }
+                case 'week': {
+                    const weekAgo = new Date(today);
+                    weekAgo.setDate(weekAgo.getDate() - 7);
+                    return tDate >= weekAgo;
+                }
+                case 'month': {
+                    return tDate.getMonth() === today.getMonth() &&
+                           tDate.getFullYear() === today.getFullYear();
+                }
+                case 'year': {
+                    return tDate.getFullYear() === today.getFullYear();
+                }
+                default: return true;
+            }
+        });
+    }
+
+    if (searchTerm) {
+        filtered = filtered.filter(t =>
+            t.title.toLowerCase().includes(searchTerm) ||
+            (t.category || '').toLowerCase().includes(searchTerm) ||
+            (t.notes || '').toLowerCase().includes(searchTerm)
+        );
+    }
+
+    const isEmpty = filtered.length === 0;
+    document.getElementById('emptyState').style.display       = isEmpty ? 'block' : 'none';
+    document.getElementById('transactionsTable').style.display = isEmpty ? 'none' : 'table';
+
+    if (isEmpty) {
+        document.getElementById('emptyState').querySelector('h3').textContent = allTransactions.length ? 'No matching transactions' : 'No transactions yet';
+        document.getElementById('emptyState').querySelector('p').textContent  = allTransactions.length ? 'Try adjusting your filters' : 'Start by adding your first transaction';
+    }
+
+    renderTransactions(filtered);
+    updateSummary(filtered);
+}
+
+async function loadTransactions() {
+    try {
+        const transactions = await FinFlow.Transactions.getAll();
+        allTransactions = transactions || [];
+
+        if (allTransactions.length) {
+            document.getElementById('emptyState').style.display = 'none';
+            document.getElementById('transactionsTable').style.display = 'table';
+        } else {
+            document.getElementById('emptyState').style.display = 'block';
+            document.getElementById('transactionsTable').style.display = 'none';
+        }
+        applyFiltersAndRender();
+    } catch(err) {
+        console.error('Failed to load transactions:', err);
+        document.getElementById('emptyState').style.display = 'block';
+        document.getElementById('transactionsTable').style.display = 'none';
+    }
+}
+
+document.getElementById('filterType').addEventListener('change', applyFiltersAndRender);
+document.getElementById('filterCategory').addEventListener('change', applyFiltersAndRender);
+document.getElementById('filterPeriod').addEventListener('change', applyFiltersAndRender);
+document.getElementById('searchInput').addEventListener('input', FinFlow.Utils.debounce(applyFiltersAndRender, 300));
+
+loadTransactions();
+</script>
+</body>
+</html>

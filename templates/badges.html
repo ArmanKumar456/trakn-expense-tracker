@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Badges - TRAKN</title>
+    <!-- Reference Pattern: External CSS -->
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="icon" type="image/png" href="/static/images/favicon.png">
+    
+    <!-- Internal Styles for Badges Page Design -->
+    <style>
+        /* Badges Specific Styles */
+        .content-area { padding: 2rem; flex: 1; max-width: 1100px; }
+        
+        /* STATS ROW */
+        .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 1.75rem; }
+        .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.1rem 1.25rem; }
+        .stat-label { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.3rem; }
+        .stat-val { font-size: 1.5rem; font-weight: 700; }
+        .stat-sub { font-size: 0.73rem; color: var(--text-faint); margin-top: 0.15rem; }
+
+        /* TABS */
+        .tab-bar { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem; }
+        .tab { padding: 0.6rem 1.1rem; font-size: 0.875rem; font-weight: 500; border: none; background: none; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.15s, border-color 0.15s; }
+        .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+        .tab:hover:not(.active) { color: var(--text); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* SECTION TITLE */
+        .section-title { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); margin: 1.5rem 0 0.85rem; }
+        .section-title:first-child { margin-top: 0; }
+
+        /* BADGES GRID */
+        .badges-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 12px; }
+        .badge-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.2rem 1rem; display: flex; flex-direction: column; align-items: center; gap: 0.55rem; text-align: center; cursor: pointer; transition: border-color 0.2s, transform 0.15s, box-shadow 0.15s; position: relative; }
+        .badge-card:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: 0 8px 24px rgba(16,185,129,0.10); }
+        .badge-card.earned { border-color: rgba(16,185,129,0.4); }
+        .badge-card.locked { opacity: 0.42; }
+        .badge-card.locked:hover { transform: none; box-shadow: none; border-color: var(--border); }
+        .badge-icon { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+        .badge-icon svg { width: 26px; height: 26px; }
+        .badge-name { font-size: 0.82rem; font-weight: 700; line-height: 1.3; color: var(--text); }
+        .badge-desc { font-size: 0.72rem; color: var(--text-muted); line-height: 1.4; }
+        .badge-pill { position: absolute; top: 10px; right: 10px; font-size: 0.58rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; padding: 2px 7px; border-radius: 20px; }
+        .pill-new { background: rgba(16,185,129,0.12); color: #10b981; }
+        .pill-rare { background: rgba(139,92,246,0.12); color: #8b5cf6; }
+        .pill-locked { background: rgba(107,114,128,0.10); color: var(--text-muted); }
+        .progress-bar { width: 80%; height: 4px; background: var(--surface2); border-radius: 99px; overflow: hidden; margin-top: 4px; }
+        .progress-fill { height: 100%; border-radius: 99px; background: var(--accent); }
+        .progress-txt { font-size: 0.68rem; color: var(--text-faint); }
+
+        /* LEADERBOARD */
+        .leaderboard { display: flex; flex-direction: column; gap: 8px; }
+        .lb-row { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 0.75rem 1rem; transition: border-color 0.15s; }
+        .lb-row.you { border-color: rgba(16,185,129,0.5); }
+        .lb-rank { font-size: 0.78rem; font-weight: 800; width: 22px; color: var(--text-faint); }
+        .lb-rank.gold { color: #f59e0b; }
+        .lb-rank.silver { color: #94a3b8; }
+        .lb-rank.bronze { color: #b07d5a; }
+        .lb-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 700; flex-shrink: 0; }
+        .lb-info { flex: 1; }
+        .lb-name { font-size: 0.85rem; font-weight: 600; }
+        .lb-sub { font-size: 0.72rem; color: var(--text-faint); }
+        .lb-pts { font-size: 0.85rem; font-weight: 700; color: var(--accent); }
+
+        /* MODAL */
+        .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+        .modal-backdrop.open { opacity: 1; pointer-events: all; }
+        .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 2rem 1.75rem 1.5rem; max-width: 340px; width: 90%; text-align: center; transform: scale(0.92) translateY(12px); transition: transform 0.22s ease; }
+        .modal-backdrop.open .modal { transform: scale(1) translateY(0); }
+        .modal-icon { width: 76px; height: 76px; border-radius: 50%; margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center; font-size: 34px; }
+        .modal-name { font-size: 1.15rem; font-weight: 800; margin-bottom: 0.4rem; }
+        .modal-desc { font-size: 0.82rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 0.85rem; }
+        .modal-earn { font-size: 0.78rem; color: var(--text-muted); background: var(--surface2); border-radius: 8px; padding: 0.6rem 0.85rem; margin-bottom: 1rem; }
+        .modal-xp { font-size: 1.4rem; font-weight: 800; color: var(--accent); }
+        .modal-xp-label { font-size: 0.72rem; color: var(--text-faint); margin-bottom: 1.25rem; }
+        .modal-close { width: 100%; padding: 0.65rem; border-radius: 9px; border: 1px solid var(--border); background: none; color: var(--text); font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: background 0.15s; }
+        .modal-close:hover { background: var(--surface2); }
+
+        @media (max-width: 720px) {
+            .stats-row { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar (Matched to Reference) -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="fin">TRAK</span><span class="flow">N</span>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <span class="nav-section-title">Main</span>
+                <a href="/dashboard.html" class="nav-item ">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
+                    Dashboard
+                </a>
+                <a href="/transactions.html" class="nav-item ">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="7" x2="19" y2="7"></line>
+                    <line x1="5" y1="11" x2="16" y2="11"></line>
+                    <path d="M5 7c6 0 7 4 7 6s-2 4-7 4"></path>
+                    <line x1="10" y1="15" x2="17" y2="21"></line>
+                    </svg>
+                    Transactions
+                </a>
+                <a href="/income.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="16"></line>
+                        <line x1="8" y1="12" x2="16" y2="12"></line>
+                    </svg>
+                    Income
+                </a>
+                <a href="/expense.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="8" y1="12" x2="16" y2="12"></line>
+                    </svg>
+                    Expenses
+                </a>
+                <a href="/budget.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <circle cx="12" cy="12" r="6"></circle>
+                        <circle cx="12" cy="12" r="2"></circle>
+                    </svg>
+                    Budgets
+                </a>
+                <a href="/recurring.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="17 1 21 5 17 9"></polyline>
+                    <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+                    <polyline points="7 23 3 19 7 15"></polyline>
+                    <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+                    </svg>
+                    Recurring
+                </a>
+                <a href="/goals.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <circle cx="12" cy="12" r="6"></circle>
+                    <circle cx="12" cy="12" r="2"></circle>
+                    </svg>
+                    Goals
+                </a>
+                <a href="/networth.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="6" width="20" height="12" rx="2"></rect>
+                    <path d="M16 12h4"></path>
+                    <circle cx="16" cy="12" r="1"></circle>
+                    </svg>
+                    Net Worth
+                </a>
+                
+                <span class="nav-section-title">Insights</span>
+                <a href="/analytics.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="20" x2="18" y2="10"></line>
+                        <line x1="12" y1="20" x2="12" y2="4"></line>
+                        <line x1="6" y1="20" x2="6" y2="14"></line>
+                    </svg>
+                    Analytics
+                </a>
+                <a href="/calculator.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="4" y="2" width="16" height="20" rx="2"></rect>
+                    <line x1="8" y1="6" x2="16" y2="6"></line>
+                    <circle cx="8" cy="11" r="1"></circle>
+                    <circle cx="12" cy="11" r="1"></circle>
+                    <circle cx="16" cy="11" r="1"></circle>
+                    <circle cx="8" cy="15" r="1"></circle>
+                    <circle cx="12" cy="15" r="1"></circle>
+                    <circle cx="16" cy="15" r="1"></circle>
+                    </svg>
+                    Calculator
+                </a>
+                <a href="/badges.html" class="nav-item active">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="8" r="6"></circle>
+                    <polyline points="8 14 8 22 12 19 16 22 16 14"></polyline>
+                    </svg>
+                    Badges
+                </a>
+                <a href="/news.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+                    <line x1="7" y1="8" x2="17" y2="8"></line>
+                    <line x1="7" y1="12" x2="17" y2="12"></line>
+                    <line x1="7" y1="16" x2="13" y2="16"></line>
+                    <line x1="4" y1="4" x2="4" y2="20"></line>
+                    </svg>
+                    News
+                </a>
+                <a href="/import.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    Import
+                </a>
+                
+                <span class="nav-section-title">Settings</span>
+                <a href="/admin.html" class="nav-item admin-link" style="display: none;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                    Admin
+                </a>
+                <a href="/profile.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    Profile
+                </a>
+                <a href="#" class="nav-item" data-logout>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                    Sign Out
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header (Matched to Reference) -->
+            <header class="page-header">
+                <div class="header-left">
+                    <h1>Badges</h1>
+                    <p id="currentMonth"></p>
+                </div>
+                <div class="header-right">
+                    <button class="theme-toggle" data-theme-toggle>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                        <span>Dark</span>
+                    </button>
+                </div>
+            </header>
+
+            <div class="content-area">
+                <!-- Stats -->
+                <div class="stats-row">
+                    <div class="stat-card">
+                        <div class="stat-label">Badges Earned</div>
+                        <div class="stat-val" style="color:var(--accent)">6</div>
+                        <div class="stat-sub">of 18 total</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">XP Points</div>
+                        <div class="stat-val">1,240</div>
+                        <div class="stat-sub">Level 4 · Saver</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Daily Streak</div>
+                        <div class="stat-val" style="color:var(--amber)">12 🔥</div>
+                        <div class="stat-sub">days logging</div>
+                    </div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="tab-bar">
+                    <button class="tab active" onclick="switchTab('earned', this)">Earned (6)</button>
+                    <button class="tab" onclick="switchTab('all', this)">All Badges</button>
+                    <button class="tab" onclick="switchTab('leaderboard', this)">Leaderboard</button>
+                </div>
+
+                <!-- Earned Tab -->
+                <div class="tab-content active" id="tab-earned">
+                    <div class="section-title">Your collection</div>
+                    <div class="badges-grid">
+                        <div class="badge-card earned" onclick="openModal('first-step')">
+                            <span class="badge-pill pill-new">New</span>
+                            <div class="badge-icon" style="background:rgba(16,185,129,0.12)">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                            </div>
+                            <div class="badge-name">First Step</div>
+                            <div class="badge-desc">Added your first transaction</div>
+                        </div>
+                        <div class="badge-card earned" onclick="openModal('budget-keeper')">
+                            <div class="badge-icon" style="background:rgba(59,130,246,0.12)">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+                            </div>
+                            <div class="badge-name">Budget Keeper</div>
+                            <div class="badge-desc">Stayed under budget for a month</div>
+                        </div>
+                        <div class="badge-card earned" onclick="openModal('savings-streak')">
+                            <span class="badge-pill pill-rare">Rare</span>
+                            <div class="badge-icon" style="background:rgba(245,158,11,0.12)">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                            </div>
+                            <div class="badge-name">Savings Streak</div>
+                            <div class="badge-desc">Saved money 7 weeks in a row</div>
+                        </div>
+                        <div class="badge-card earned" onclick="openModal('expense-tracker')">
+                            <div class="badge-icon" style="background:rgba(139,92,246,0.12)">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                            </div>
+                            <div class="badge-name">Expense Tracker</div>
+                            <div class="badge-desc">Logged 50+ expenses</div>
+                        </div>
+                        <div class="badge-card earned" onclick="openModal('income-boss')">
+                            <div class="badge-icon" style="background:rgba(16,185,129,0.12)">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                            </div>
+                            <div class="badge-name">Income Boss</div>
+                            <div class="badge-desc">Logged income for 3 months</div>
+                        </div>
+                        <div class="badge-card earned" onclick="openModal('analyst')">
+                            <div class="badge-icon" style="background:rgba(239,68,68,0.10)">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                            </div>
+                            <div class="badge-name">Analyst</div>
+                            <div class="badge-desc">Viewed Analytics 10 times</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- All Badges Tab -->
+                <div class="tab-content" id="tab-all">
+                    <div class="section-title">In Progress</div>
+                    <div class="badges-grid">
+                        <div class="badge-card" onclick="openModal('century')">
+                            <div class="badge-icon" style="background:rgba(245,158,11,0.12)">💯</div>
+                            <div class="badge-name">Century Club</div>
+                            <div class="badge-desc">Log 100 transactions</div>
+                            <div class="progress-bar"><div class="progress-fill" style="width:67%"></div></div>
+                            <div class="progress-txt">67 / 100</div>
+                        </div>
+                        <div class="badge-card" onclick="openModal('no-spend')">
+                            <div class="badge-icon" style="background:rgba(16,185,129,0.12)">🚫</div>
+                            <div class="badge-name">No-Spend Day</div>
+                            <div class="badge-desc">Have a zero-expense day</div>
+                            <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
+                            <div class="progress-txt">0 / 1</div>
+                        </div>
+                        <div class="badge-card" onclick="openModal('import-master')">
+                            <div class="badge-icon" style="background:rgba(59,130,246,0.12)">📥</div>
+                            <div class="badge-name">Import Master</div>
+                            <div class="badge-desc">Import a bank statement</div>
+                            <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
+                            <div class="progress-txt">0 / 1</div>
+                        </div>
+                        <div class="badge-card" onclick="openModal('consistent')">
+                            <div class="badge-icon" style="background:rgba(139,92,246,0.12)">📅</div>
+                            <div class="badge-name">Consistent</div>
+                            <div class="badge-desc">Log every day for 2 weeks</div>
+                            <div class="progress-bar"><div class="progress-fill" style="width:86%"></div></div>
+                            <div class="progress-txt">12 / 14 days</div>
+                        </div>
+                    </div>
+
+                    <div class="section-title">Locked</div>
+                    <div class="badges-grid">
+                        <div class="badge-card locked" onclick="openModal('millionaire')">
+                            <span class="badge-pill pill-locked">Locked</span>
+                            <div class="badge-icon" style="background:rgba(107,114,128,0.10)">🔒</div>
+                            <div class="badge-name">Millionaire</div>
+                            <div class="badge-desc">Track ₹10L+ total income</div>
+                        </div>
+                        <div class="badge-card locked" onclick="openModal('disciplined')">
+                            <span class="badge-pill pill-locked">Locked</span>
+                            <div class="badge-icon" style="background:rgba(107,114,128,0.10)">🔒</div>
+                            <div class="badge-name">Disciplined</div>
+                            <div class="badge-desc">30-day logging streak</div>
+                        </div>
+                        <div class="badge-card locked" onclick="openModal('zero-waste')">
+                            <span class="badge-pill pill-rare">Rare</span>
+                            <div class="badge-icon" style="background:rgba(107,114,128,0.10)">🔒</div>
+                            <div class="badge-name">Zero Waste</div>
+                            <div class="badge-desc">End a month at net ₹0</div>
+                        </div>
+                        <div class="badge-card locked" onclick="openModal('big-saver')">
+                            <span class="badge-pill pill-locked">Locked</span>
+                            <div class="badge-icon" style="background:rgba(107,114,128,0.10)">🔒</div>
+                            <div class="badge-name">Big Saver</div>
+                            <div class="badge-desc">Save ₹50,000 in one month</div>
+                        </div>
+                        <div class="badge-card locked" onclick="openModal('category-king')">
+                            <span class="badge-pill pill-locked">Locked</span>
+                            <div class="badge-icon" style="background:rgba(107,114,128,0.10)">🔒</div>
+                            <div class="badge-name">Category King</div>
+                            <div class="badge-desc">Use all 6 expense categories</div>
+                        </div>
+                        <div class="badge-card locked" onclick="openModal('legend')">
+                            <span class="badge-pill pill-rare">Rare</span>
+                            <div class="badge-icon" style="background:rgba(107,114,128,0.10)">🔒</div>
+                            <div class="badge-name">TRAKN Legend</div>
+                            <div class="badge-desc">Earn every other badge</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Leaderboard Tab -->
+                <div class="tab-content" id="tab-leaderboard">
+                    <div class="section-title">Top Earners This Month</div>
+                    <div class="leaderboard">
+                        <div class="lb-row">
+                            <div class="lb-rank gold">1</div>
+                            <div class="lb-avatar" style="background:rgba(245,158,11,0.12);color:#f59e0b">RS</div>
+                            <div class="lb-info"><div class="lb-name">Rohan S.</div><div class="lb-sub">14 badges</div></div>
+                            <div class="lb-pts">3,820 XP</div>
+                        </div>
+                        <div class="lb-row">
+                            <div class="lb-rank silver">2</div>
+                            <div class="lb-avatar" style="background:rgba(59,130,246,0.12);color:#3b82f6">PK</div>
+                            <div class="lb-info"><div class="lb-name">Priya K.</div><div class="lb-sub">11 badges</div></div>
+                            <div class="lb-pts">2,960 XP</div>
+                        </div>
+                        <div class="lb-row you">
+                            <div class="lb-rank bronze">3</div>
+                            <div class="lb-avatar" style="background:rgba(16,185,129,0.12);color:#10b981">You</div>
+                            <div class="lb-info"><div class="lb-name">You <span style="font-size:0.7rem;color:#10b981;font-weight:600">· You</span></div><div class="lb-sub">6 badges</div></div>
+                            <div class="lb-pts">1,240 XP</div>
+                        </div>
+                        <div class="lb-row">
+                            <div class="lb-rank">4</div>
+                            <div class="lb-avatar" style="background:rgba(139,92,246,0.12);color:#8b5cf6">AM</div>
+                            <div class="lb-info"><div class="lb-name">Arjun M.</div><div class="lb-sub">5 badges</div></div>
+                            <div class="lb-pts">980 XP</div>
+                        </div>
+                        <div class="lb-row">
+                            <div class="lb-rank">5</div>
+                            <div class="lb-avatar" style="background:rgba(239,68,68,0.10);color:#ef4444">DV</div>
+                            <div class="lb-info"><div class="lb-name">Divya V.</div><div class="lb-sub">4 badges</div></div>
+                            <div class="lb-pts">740 XP</div>
+                        </div>
+                        <div class="lb-row">
+                            <div class="lb-rank">6</div>
+                            <div class="lb-avatar" style="background:rgba(107,114,128,0.10);color:var(--text-muted)">NK</div>
+                            <div class="lb-info"><div class="lb-name">Neha K.</div><div class="lb-sub">3 badges</div></div>
+                            <div class="lb-pts">510 XP</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-backdrop" id="modal" onclick="handleBackdropClick(event)">
+        <div class="modal">
+            <div class="modal-icon" id="m-icon"></div>
+            <div class="modal-name" id="m-name"></div>
+            <div class="modal-desc" id="m-desc"></div>
+            <div class="modal-earn" id="m-earn"></div>
+            <div class="modal-xp" id="m-xp"></div>
+            <div class="modal-xp-label">XP Points</div>
+            <button class="modal-close" onclick="closeModal()">Close</button>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+    <script>
+        // --- Reference Pattern Scripts ---
+        // Check if user is admin and show admin link
+        const isAdmin = localStorage.getItem('trakn-is-admin') === 'true';
+        if (isAdmin) {
+            document.querySelector('.admin-link').style.display = 'flex';
+        }
+
+        // Set current month
+        const now = new Date();
+        document.getElementById('currentMonth').textContent = now.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+
+        // --- Badge Page Specific Logic ---
+        
+        // Tabs
+        function switchTab(name, btn) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + name).classList.add('active');
+            btn.classList.add('active');
+        }
+
+        // Badge Data
+        const badges = {
+            'first-step':     { name:'First Step',      desc:'You added your very first transaction — a journey of a thousand rupees begins with one entry.', earn:'Add any transaction', pts:50,   icon:'✅', color:'#10b981', bg:'rgba(16,185,129,0.12)' },
+            'budget-keeper':  { name:'Budget Keeper',   desc:'You stayed within your set budget for an entire calendar month. Discipline unlocked.', earn:'Stay under budget for 1 full month', pts:150,  icon:'🎯', color:'#3b82f6', bg:'rgba(59,130,246,0.12)' },
+            'savings-streak': { name:'Savings Streak',  desc:'You recorded net savings for 7 consecutive weeks. Your future self says thank you.', earn:'Save money 7 weeks in a row', pts:300,  icon:'⭐', color:'#f59e0b', bg:'rgba(245,158,11,0.12)' },
+            'expense-tracker':{ name:'Expense Tracker', desc:'You have logged over 50 individual expenses. You know exactly where every rupee goes.', earn:'Log 50+ expenses', pts:100,  icon:'📋', color:'#8b5cf6', bg:'rgba(139,92,246,0.12)' },
+            'income-boss':    { name:'Income Boss',     desc:'Three months of consistent income logging. You are building a complete financial picture.', earn:'Log income for 3 consecutive months', pts:200,  icon:'💰', color:'#10b981', bg:'rgba(16,185,129,0.12)' },
+            'analyst':        { name:'Analyst',         desc:'You visited the Analytics page 10 times. Data-driven decisions start here.', earn:'Open the Analytics page 10 times', pts:75,   icon:'📊', color:'#ef4444', bg:'rgba(239,68,68,0.10)' },
+            'century':        { name:'Century Club',    desc:'Log 100 total transactions. You are more than halfway there — keep the momentum.', earn:'Log 100 transactions total', pts:250,  icon:'💯', color:'#f59e0b', bg:'rgba(245,158,11,0.12)' },
+            'no-spend':       { name:'No-Spend Day',    desc:'Zero expenses in a single day. Harder than it sounds, more rewarding than expected.', earn:'Record zero expenses in any one day', pts:80,   icon:'🚫', color:'#10b981', bg:'rgba(16,185,129,0.12)' },
+            'import-master':  { name:'Import Master',   desc:'Upload a bank or card statement to TRAKN and let the automation do the work.', earn:'Import a CSV bank statement', pts:120,  icon:'📥', color:'#3b82f6', bg:'rgba(59,130,246,0.12)' },
+            'consistent':     { name:'Consistent',      desc:'Log at least one transaction every single day for 14 consecutive days. Almost there!', earn:'Log daily for 14 days straight', pts:180,  icon:'📅', color:'#8b5cf6', bg:'rgba(139,92,246,0.12)' },
+            'millionaire':    { name:'Millionaire',     desc:'Track a cumulative total of ₹10 lakhs or more in income. The big leagues await.', earn:'Track ₹10,00,000+ in total income', pts:500,  icon:'🔒', color:'var(--text-muted)', bg:'rgba(107,114,128,0.10)' },
+            'disciplined':    { name:'Disciplined',     desc:'Log at least one transaction every day for 30 consecutive days. Not a single gap.', earn:'30-day daily logging streak', pts:350,  icon:'🔒', color:'var(--text-muted)', bg:'rgba(107,114,128,0.10)' },
+            'zero-waste':     { name:'Zero Waste',      desc:'End a calendar month with income exactly covering expenses — the rarest of financial balances.', earn:'Finish a month with ₹0 net surplus/deficit', pts:400,  icon:'🔒', color:'var(--text-muted)', bg:'rgba(107,114,128,0.10)' },
+            'big-saver':      { name:'Big Saver',       desc:'Save ₹50,000 in a single calendar month. Requires serious discipline and income awareness.', earn:'Save ₹50,000 in one month', pts:450,  icon:'🔒', color:'var(--text-muted)', bg:'rgba(107,114,128,0.10)' },
+            'category-king':  { name:'Category King',   desc:'Log at least one transaction in all 6 available expense categories. Explore the full TRAKN system.', earn:'Use all 6 expense categories', pts:90,   icon:'🔒', color:'var(--text-muted)', bg:'rgba(107,114,128,0.10)' },
+            'legend':         { name:'TRAKN Legend',    desc:'Collect every single other badge in TRAKN. The pinnacle achievement of the platform.', earn:'Earn all other badges first', pts:1000, icon:'🔒', color:'var(--text-muted)', bg:'rgba(107,114,128,0.10)' },
+        };
+
+        function openModal(id) {
+            const b = badges[id];
+            if (!b) return;
+            const icon = document.getElementById('m-icon');
+            icon.textContent = b.icon;
+            icon.style.background = b.bg;
+            icon.style.fontSize = '32px';
+            document.getElementById('m-name').textContent = b.name;
+            document.getElementById('m-desc').textContent = b.desc;
+            document.getElementById('m-earn').textContent = '🏁 How to earn: ' + b.earn;
+            document.getElementById('m-xp').textContent = '+' + b.pts;
+            document.getElementById('modal').classList.add('open');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('open');
+        }
+
+        function handleBackdropClick(e) {
+            if (e.target === document.getElementById('modal')) closeModal();
+        }
+    </script>
+</body>
+</html>

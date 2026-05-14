@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Feedback - TRAKN</title>
+<link rel="stylesheet" href="/static/css/styles.css">
+<link rel="icon" type="image/png" href="/static/images/favicon.png">
+<style>
+  .feedback-wrap { max-width: 680px; margin: 0 auto; padding-bottom: 3rem; }
+
+  .fb-card {
+    background: var(--bg-white, #fff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 16px; padding: 1.6rem 1.8rem; margin-bottom: 1.2rem;
+  }
+  .fb-card-title {
+    font-size: .72rem; font-weight: 800; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--text-gray, #94a3b8); margin-bottom: 1.1rem;
+  }
+
+  /* Stars */
+  .star-row { display:flex; gap:6px; }
+  .star-btn { background:none; border:none; cursor:pointer; font-size:2rem; line-height:1; color:var(--border-color,#e2e8f0); transition:color .12s,transform .12s; padding:0; }
+  .star-btn:hover,.star-btn.active { color:#f59e0b; transform:scale(1.15); }
+  .star-label { margin-top:.5rem; font-size:.82rem; color:var(--text-secondary,#666); min-height:1.2em; }
+
+  /* Type chips */
+  .type-chips { display:flex; gap:.5rem; flex-wrap:wrap; }
+  .type-chip { padding:6px 16px; border-radius:99px; border:1.5px solid var(--border-color,#e2e8f0); background:none; font-size:.82rem; font-weight:600; cursor:pointer; transition:all .15s; color:var(--text-primary,#111); }
+  .type-chip.bug.selected      { border-color:#dc2626; color:#dc2626; background:#fee2e2; }
+  .type-chip.feature.selected  { border-color:#059669; color:#059669; background:#d1fae5; }
+  .type-chip.ui.selected       { border-color:#7c3aed; color:#7c3aed; background:#ede9fe; }
+  .type-chip.general.selected  { border-color:#0891b2; color:#0891b2; background:#e0f2fe; }
+
+  /* Page grid */
+  .page-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:.5rem; }
+  .page-chip { padding:8px 10px; border-radius:10px; border:1.5px solid var(--border-color,#e2e8f0); background:none; font-size:.78rem; font-weight:600; cursor:pointer; transition:all .15s; text-align:center; color:var(--text-secondary,#666); }
+  .page-chip.selected { border-color:#4f46e5; color:#4f46e5; background:#eef2ff; }
+
+  /* Severity */
+  .severity-row { display:flex; gap:.5rem; flex-wrap:wrap; }
+  .sev-chip { flex:1; min-width:80px; padding:8px 0; border-radius:10px; border:1.5px solid var(--border-color,#e2e8f0); background:none; font-size:.82rem; font-weight:700; cursor:pointer; transition:all .15s; text-align:center; color:var(--text-secondary,#666); }
+  .sev-chip.low.selected    { background:#d1fae5; border-color:#6ee7b7; color:#065f46; }
+  .sev-chip.medium.selected { background:#fef3c7; border-color:#fcd34d; color:#92400e; }
+  .sev-chip.high.selected   { background:#fee2e2; border-color:#fca5a5; color:#991b1b; }
+  .severity-section { display:none; }
+  .severity-section.show { display:block; }
+
+  /* Textarea */
+  .fb-textarea { width:100%; resize:vertical; min-height:120px; border-radius:10px; border:1.5px solid var(--border-color,#e2e8f0); background:var(--bg-light,#f8fafc); color:var(--text-primary,#111); font-size:.9rem; padding:.75rem 1rem; font-family:inherit; transition:border-color .15s; box-sizing:border-box; }
+  .fb-textarea:focus { outline:none; border-color:#4f46e5; }
+  .char-counter { font-size:.72rem; color:var(--text-gray,#94a3b8); text-align:right; margin-top:4px; }
+  .char-counter.warn { color:#f59e0b; font-weight:700; }
+  .char-counter.over { color:#dc2626; font-weight:700; }
+
+  /* Recommend */
+  .recommend-row { display:flex; gap:.75rem; }
+  .rec-btn { flex:1; padding:10px; border-radius:10px; border:1.5px solid var(--border-color,#e2e8f0); background:none; font-size:.85rem; font-weight:700; cursor:pointer; transition:all .15s; color:var(--text-secondary,#666); display:flex; align-items:center; justify-content:center; gap:6px; }
+  .rec-btn.yes.selected { background:#d1fae5; border-color:#6ee7b7; color:#065f46; }
+  .rec-btn.no.selected  { background:#fee2e2; border-color:#fca5a5; color:#991b1b; }
+
+  /* Upload */
+  .upload-zone { border:2px dashed var(--border-color,#e2e8f0); border-radius:12px; padding:1.5rem; text-align:center; cursor:pointer; transition:all .15s; position:relative; }
+  .upload-zone:hover { border-color:#4f46e5; background:#eef2ff20; }
+  .upload-zone.has-file { border-color:#28a745; background:#d1fae520; border-style:solid; }
+  .upload-zone input { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; }
+  .upload-zone .uz-icon { font-size:1.8rem; margin-bottom:.4rem; }
+  .upload-zone .uz-text { font-size:.82rem; color:var(--text-secondary,#666); }
+  .upload-zone .uz-sub  { font-size:.72rem; color:var(--text-gray,#94a3b8); margin-top:2px; }
+  .upload-preview { display:none; align-items:center; gap:.75rem; }
+  .upload-preview.show { display:flex; }
+  .upload-preview img { width:60px; height:60px; object-fit:cover; border-radius:8px; border:1px solid var(--border-color); }
+  .upload-preview .up-name { font-size:.82rem; font-weight:600; flex:1; }
+  .upload-preview .up-remove { background:none; border:none; cursor:pointer; color:#dc3545; font-size:1.2rem; padding:0; }
+
+  /* Submit */
+  .fb-submit { width:100%; padding:14px; border-radius:12px; border:none; background:linear-gradient(135deg,#4f46e5,#7c3aed); color:#fff; font-size:1rem; font-weight:700; cursor:pointer; transition:all .2s; display:flex; align-items:center; justify-content:center; gap:8px; }
+  .fb-submit:hover:not(:disabled) { opacity:.9; transform:translateY(-1px); box-shadow:0 8px 24px rgba(79,70,229,.35); }
+  .fb-submit:disabled { opacity:.45; cursor:not-allowed; transform:none; box-shadow:none; }
+
+  /* Errors */
+  .field-error { font-size:.75rem; color:#dc3545; margin-top:4px; display:none; }
+  .field-error.show { display:block; }
+
+  /* Input */
+  .fb-input { width:100%; border-radius:10px; border:1.5px solid var(--border-color,#e2e8f0); background:var(--bg-light,#f8fafc); color:var(--text-primary,#111); font-size:.9rem; padding:.65rem 1rem; font-family:inherit; transition:border-color .15s; box-sizing:border-box; }
+  .fb-input:focus { outline:none; border-color:#4f46e5; }
+  .fb-input.error { border-color:#dc3545; }
+  .form-label { font-size:.82rem; font-weight:600; color:var(--text-primary); margin-bottom:.4rem; display:block; }
+  .form-label .optional { font-weight:400; color:var(--text-gray); }
+
+  /* ── Success screen ── */
+  .success-screen { display:none; animation:fadeInUp .4s ease; }
+  .success-screen.show { display:block; }
+  @keyframes fadeInUp { from{transform:translateY(20px);opacity:0} to{transform:translateY(0);opacity:1} }
+
+  .success-banner {
+    border-radius:16px; padding:2rem 1.8rem; margin-bottom:1.2rem;
+    text-align:center;
+  }
+  .success-banner.rating   { background:linear-gradient(135deg,#fef3c7,#fffbeb); border:1px solid #fcd34d; }
+  .success-banner.bug      { background:linear-gradient(135deg,#fee2e2,#fff5f5); border:1px solid #fca5a5; }
+  .success-banner.feature  { background:linear-gradient(135deg,#d1fae5,#f0fdf4); border:1px solid #6ee7b7; }
+  .success-banner.ui       { background:linear-gradient(135deg,#ede9fe,#faf5ff); border:1px solid #c4b5fd; }
+  .success-banner.general  { background:linear-gradient(135deg,#e0f2fe,#f0f9ff); border:1px solid #7dd3fc; }
+
+  .success-icon-big { font-size:3.5rem; margin-bottom:1rem; animation:popIn .5s .1s both; }
+  @keyframes popIn { from{transform:scale(0)} to{transform:scale(1)} }
+  .success-title { font-size:1.4rem; font-weight:800; margin-bottom:.5rem; }
+  .success-msg   { font-size:.92rem; line-height:1.6; margin-bottom:1rem; }
+  .success-ref   { display:inline-block; background:rgba(0,0,0,.06); border-radius:8px; padding:5px 14px; font-size:.8rem; font-family:monospace; font-weight:700; margin-bottom:1.5rem; }
+
+  /* Priority badge */
+  .priority-badge { display:inline-flex; align-items:center; gap:5px; border-radius:99px; padding:4px 12px; font-size:.75rem; font-weight:700; margin-top:.5rem; }
+  .priority-badge.low    { background:#d1fae5; color:#065f46; }
+  .priority-badge.medium { background:#fef3c7; color:#92400e; }
+  .priority-badge.high   { background:#fee2e2; color:#991b1b; }
+  .priority-badge.info   { background:#e0f2fe; color:#075985; }
+
+  /* ── Admin panel ── */
+  .admin-panel { display:none; }
+  .admin-panel.show { display:block; }
+  .admin-panel-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; }
+  .admin-panel-header h2 { font-size:1.1rem; font-weight:800; margin:0; }
+
+  .fb-item { background:var(--bg-white,#fff); border:1px solid var(--border-color,#e2e8f0); border-radius:12px; padding:1.1rem 1.3rem; margin-bottom:.75rem; }
+  .fb-item-header { display:flex; align-items:flex-start; gap:10px; margin-bottom:.5rem; flex-wrap:wrap; }
+  .fb-item-meta { flex:1; min-width:0; }
+  .fb-item-name { font-weight:700; font-size:.9rem; }
+  .fb-item-date { font-size:.72rem; color:var(--text-gray); }
+  .fb-item-type-badge { border-radius:99px; padding:2px 10px; font-size:.7rem; font-weight:700; }
+  .fb-item-msg { font-size:.85rem; color:var(--text-secondary); margin:.4rem 0; }
+  .fb-item-page { font-size:.72rem; color:var(--text-gray); }
+  .stars-mini { color:#f59e0b; font-size:.85rem; }
+
+  /* Reply box */
+  .reply-box { margin-top:.75rem; border-top:1px solid var(--border-color); padding-top:.75rem; }
+  .reply-existing { background:var(--bg-light); border-radius:8px; padding:.6rem .8rem; font-size:.82rem; margin-bottom:.5rem; border-left:3px solid #4f46e5; }
+  .reply-existing .re-label { font-size:.65rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#4f46e5; margin-bottom:2px; }
+  .reply-input { width:100%; border-radius:8px; border:1.5px solid var(--border-color,#e2e8f0); background:var(--bg-light); color:var(--text-primary); font-size:.82rem; padding:.5rem .75rem; font-family:inherit; resize:vertical; min-height:60px; box-sizing:border-box; }
+  .reply-input:focus { outline:none; border-color:#4f46e5; }
+  .reply-send-btn { margin-top:.4rem; padding:5px 14px; border-radius:8px; border:none; background:#4f46e5; color:#fff; font-size:.78rem; font-weight:700; cursor:pointer; }
+  .reply-send-btn:hover { opacity:.88; }
+
+  .empty-admin { text-align:center; padding:2.5rem 1rem; color:var(--text-gray); font-size:.9rem; }
+
+  .tab-row { display:flex; gap:.5rem; margin-bottom:1.2rem; flex-wrap:wrap; }
+  .tab-btn { padding:6px 16px; border-radius:99px; border:1.5px solid var(--border-color,#e2e8f0); background:none; font-size:.82rem; font-weight:600; cursor:pointer; transition:all .15s; color:var(--text-secondary); }
+  .tab-btn.active { background:#4f46e5; border-color:#4f46e5; color:#fff; }
+
+  .clear-btn { padding:6px 14px; border-radius:8px; border:1.5px solid #fca5a5; background:none; color:#dc3545; font-size:.75rem; font-weight:700; cursor:pointer; }
+  .clear-btn:hover { background:#fee2e2; }
+</style>
+</head>
+<body>
+<div class="app-container">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo"><span class="fin">TRAK</span><span class="flow">N</span></div>
+    </div>
+    <nav class="sidebar-nav">
+      <span class="nav-section-title">Main</span>
+      <a href="/dashboard.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>Dashboard</a>
+      <a href="/transactions.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="7" x2="19" y2="7"></line><line x1="5" y1="11" x2="16" y2="11"></line><path d="M5 7c6 0 7 4 7 6s-2 4-7 4"></path><line x1="10" y1="15" x2="17" y2="21"></line></svg>Transactions</a>
+      <a href="/income.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>Income</a>
+      <a href="/expense.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="8" y1="12" x2="16" y2="12"></line></svg>Expenses</a>
+      <a href="/budget.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>Budgets</a>
+      <a href="/recurring.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>Recurring</a>
+      <a href="/goals.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>Goals</a>
+      <a href="/networth.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"></rect><path d="M16 12h4"></path><circle cx="16" cy="12" r="1"></circle></svg>Net Worth</a>
+      <span class="nav-section-title">Insights</span>
+      <a href="/analytics.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>Analytics</a>
+      <a href="/calculator.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><circle cx="8" cy="11" r="1"></circle><circle cx="12" cy="11" r="1"></circle><circle cx="16" cy="11" r="1"></circle><circle cx="8" cy="15" r="1"></circle><circle cx="12" cy="15" r="1"></circle><circle cx="16" cy="15" r="1"></circle></svg>Calculator</a>
+      <a href="/news.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"></rect><line x1="7" y1="8" x2="17" y2="8"></line><line x1="7" y1="12" x2="17" y2="12"></line><line x1="7" y1="16" x2="13" y2="16"></line><line x1="4" y1="4" x2="4" y2="20"></line></svg>News</a>
+      <a href="/import.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>Import</a>
+      <a href="/feedback.html" class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>Feedback</a>
+      <span class="nav-section-title">Settings</span>
+      <a href="/admin.html" class="nav-item admin-link" style="display:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>Admin</a>
+      <a href="/profile.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>Profile</a>
+      
+      <a href="#" class="nav-item" data-logout><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>Sign Out</a>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <header class="page-header">
+      <div class="header-left">
+        <h1>Send Feedback</h1>
+        <p>Help us improve TRAKN for you</p>
+      </div>
+      <div class="header-right" style="display:flex;gap:.75rem;align-items:center;">
+        <button class="theme-toggle" data-theme-toggle>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+          <span>Dark</span>
+        </button>
+        <!-- Admin sees this button -->
+        <button id="viewInboxBtn" style="display:none;padding:7px 14px;border-radius:8px;border:1.5px solid #4f46e5;background:none;color:#4f46e5;font-size:.8rem;font-weight:700;cursor:pointer;" onclick="toggleAdmin()">
+          📥 View Inbox (<span id="inboxCount">0</span>)
+        </button>
+      </div>
+    </header>
+
+    <div class="feedback-wrap">
+
+      <!-- ══ ADMIN INBOX PANEL ══ -->
+      <div class="admin-panel" id="adminPanel">
+        <div class="admin-panel-header">
+          <h2>📥 Feedback Inbox</h2>
+          <button class="clear-btn" onclick="clearAll()">🗑 Clear All</button>
+        </div>
+        <div class="tab-row" id="filterTabs">
+          <button class="tab-btn active" data-filter="all" onclick="filterFeedback('all',this)">All</button>
+          <button class="tab-btn" data-filter="Bug Report" onclick="filterFeedback('Bug Report',this)">🐛 Bugs</button>
+          <button class="tab-btn" data-filter="Feature Request" onclick="filterFeedback('Feature Request',this)">✨ Features</button>
+          <button class="tab-btn" data-filter="UI/UX Issue" onclick="filterFeedback('UI/UX Issue',this)">🎨 UI/UX</button>
+          <button class="tab-btn" data-filter="General Feedback" onclick="filterFeedback('General Feedback',this)">💬 General</button>
+        </div>
+        <div id="inboxList"></div>
+        <button class="fb-submit" style="max-width:200px;margin:1rem auto 0;display:flex;" onclick="toggleAdmin()">← Back to Form</button>
+      </div>
+
+      <!-- ══ SUCCESS SCREEN ══ -->
+      <div class="success-screen" id="successScreen">
+        <div class="success-banner" id="successBanner">
+          <div class="success-icon-big" id="successIcon">🎉</div>
+          <div class="success-title" id="successTitle">Thank you!</div>
+          <div class="success-msg"   id="successMsg">Your feedback has been recorded.</div>
+          <div class="success-ref"   id="successRef">REF-XXXXXXXX</div>
+          <div id="successPriority"></div>
+        </div>
+        <button class="fb-submit" style="max-width:220px;margin:0 auto;" onclick="resetForm()">
+          ✉️ Send More Feedback
+        </button>
+      </div>
+
+      <!-- ══ FEEDBACK FORM ══ -->
+      <form id="feedbackForm" novalidate>
+
+        <!-- About You -->
+        <div class="fb-card">
+          <div class="fb-card-title">👤 About You <span style="font-weight:400;font-style:italic;">(optional)</span></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+            <div>
+              <label class="form-label">Name <span class="optional">(optional)</span></label>
+              <input class="fb-input" type="text" id="fb-name" placeholder="Your name" maxlength="80">
+            </div>
+            <div>
+              <label class="form-label">Email <span class="optional">(optional)</span></label>
+              <input class="fb-input" type="email" id="fb-email" placeholder="you@example.com" maxlength="120">
+              <div class="field-error" id="err-email">Please enter a valid email address.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rating -->
+        <div class="fb-card">
+          <div class="fb-card-title">⭐ Overall Rating <span style="color:#dc3545;">*</span></div>
+          <div class="star-row" id="starRow">
+            <button type="button" class="star-btn" data-val="1">★</button>
+            <button type="button" class="star-btn" data-val="2">★</button>
+            <button type="button" class="star-btn" data-val="3">★</button>
+            <button type="button" class="star-btn" data-val="4">★</button>
+            <button type="button" class="star-btn" data-val="5">★</button>
+          </div>
+          <div class="star-label" id="starLabel">Click to rate</div>
+          <div class="field-error" id="err-rating">Please select a rating.</div>
+        </div>
+
+        <!-- Type -->
+        <div class="fb-card">
+          <div class="fb-card-title">📂 Feedback Type <span style="color:#dc3545;">*</span></div>
+          <div class="type-chips" id="typeChips">
+            <button type="button" class="type-chip bug"     data-type="Bug Report">🐛 Bug Report</button>
+            <button type="button" class="type-chip feature" data-type="Feature Request">✨ Feature Request</button>
+            <button type="button" class="type-chip ui"      data-type="UI/UX Issue">🎨 UI/UX Issue</button>
+            <button type="button" class="type-chip general" data-type="General Feedback">💬 General Feedback</button>
+          </div>
+          <div class="field-error" id="err-type">Please select a feedback type.</div>
+        </div>
+
+        <!-- Page -->
+        <div class="fb-card">
+          <div class="fb-card-title">📍 Where Did You Face This? <span class="optional" style="font-style:italic;font-weight:400;">(optional)</span></div>
+          <div class="page-grid" id="pageGrid">
+            <button type="button" class="page-chip" data-page="Dashboard">🏠 Dashboard</button>
+            <button type="button" class="page-chip" data-page="Transactions">💳 Transactions</button>
+            <button type="button" class="page-chip" data-page="Income">➕ Income</button>
+            <button type="button" class="page-chip" data-page="Expenses">➖ Expenses</button>
+            <button type="button" class="page-chip" data-page="Budgets">🎯 Budgets</button>
+            <button type="button" class="page-chip" data-page="Recurring">🔄 Recurring</button>
+            <button type="button" class="page-chip" data-page="Goals">🏆 Goals</button>
+            <button type="button" class="page-chip" data-page="Net Worth">💰 Net Worth</button>
+            <button type="button" class="page-chip" data-page="Analytics">📊 Analytics</button>
+            <button type="button" class="page-chip" data-page="Calculator">🧮 Calculator</button>
+            <button type="button" class="page-chip" data-page="Profile">👤 Profile</button>
+            <button type="button" class="page-chip" data-page="Other">🔧 Other</button>
+          </div>
+        </div>
+
+        <!-- Severity (bug only) -->
+        <div class="fb-card severity-section" id="severitySection">
+          <div class="fb-card-title">🚨 Bug Severity</div>
+          <div class="severity-row" id="severityRow">
+            <button type="button" class="sev-chip low"    data-sev="Low">🟢 Low</button>
+            <button type="button" class="sev-chip medium" data-sev="Medium">🟡 Medium</button>
+            <button type="button" class="sev-chip high"   data-sev="High">🔴 High / Critical</button>
+          </div>
+        </div>
+
+        <!-- Message -->
+        <div class="fb-card">
+          <div class="fb-card-title">✍️ Your Message <span style="color:#dc3545;">*</span></div>
+          <textarea class="fb-textarea" id="fb-message" placeholder="Tell us what happened, what you'd like to see, or anything on your mind..." maxlength="500"></textarea>
+          <div class="char-counter" id="charCounter">0 / 500</div>
+          <div class="field-error" id="err-message">Please enter your feedback (minimum 5 characters).</div>
+        </div>
+
+        <!-- Recommend -->
+        <div class="fb-card">
+          <div class="fb-card-title">💡 Would You Recommend TRAKN?</div>
+          <div class="recommend-row" id="recommendRow">
+            <button type="button" class="rec-btn yes" data-rec="yes">👍 Yes, definitely!</button>
+            <button type="button" class="rec-btn no"  data-rec="no">👎 Not right now</button>
+          </div>
+        </div>
+
+        <!-- Screenshot -->
+        <div class="fb-card">
+          <div class="fb-card-title">📸 Screenshot <span style="font-weight:400;font-style:italic;">(optional)</span></div>
+          <div class="upload-zone" id="uploadZone">
+            <input type="file" id="fb-screenshot" accept="image/*">
+            <div id="uploadPrompt">
+              <div class="uz-icon">🖼️</div>
+              <div class="uz-text">Click or drag an image here</div>
+              <div class="uz-sub">PNG, JPG, WEBP up to 5 MB</div>
+            </div>
+            <div class="upload-preview" id="uploadPreview">
+              <img id="previewImg" src="" alt="preview">
+              <div class="up-name" id="previewName"></div>
+              <button type="button" class="up-remove" id="removeFile" title="Remove">✕</button>
+            </div>
+          </div>
+          <div class="field-error" id="err-file">File too large. Please upload under 5 MB.</div>
+        </div>
+
+        <button type="submit" class="fb-submit" id="submitBtn" disabled>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+          Submit Feedback
+        </button>
+      </form>
+    </div><!-- /feedback-wrap -->
+  </main>
+</div>
+
+<script src="/static/js/app.js"></script>
+<script>
+if (localStorage.getItem('trakn-is-admin') === 'true') {
+  document.querySelector('.admin-link').style.display = 'flex';
+  document.getElementById('viewInboxBtn').style.display = 'inline-flex';
+  updateInboxCount();
+}
+
+// ── Storage helpers ───────────────────────────────────────
+const STORAGE_KEY = 'trakn-feedback-inbox';
+function getInbox() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; } }
+function saveInbox(arr) { localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); }
+function updateInboxCount() {
+  const c = getInbox().length;
+  const el = document.getElementById('inboxCount');
+  if (el) el.textContent = c;
+}
+
+// ── State ─────────────────────────────────────────────────
+let selectedRating=0, selectedType='', selectedPage='', selectedSeverity='', selectedRecommend='', uploadedFile=null;
+const MAX_CHARS=500, MIN_CHARS=5;
+const starLabels=['','Poor','Fair','Good','Very Good','Excellent'];
+
+// ── Stars ─────────────────────────────────────────────────
+document.querySelectorAll('.star-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    selectedRating = parseInt(btn.dataset.val);
+    updateStars(); document.getElementById('err-rating').classList.remove('show'); checkSubmit();
+  });
+  btn.addEventListener('mouseenter', () => highlightStars(parseInt(btn.dataset.val)));
+  btn.addEventListener('mouseleave', () => updateStars());
+});
+function highlightStars(n) {
+  document.querySelectorAll('.star-btn').forEach((b,i) => b.style.color = i<n?'#f59e0b':'var(--border-color,#e2e8f0)');
+  document.getElementById('starLabel').textContent = starLabels[n]||'';
+}
+function updateStars() {
+  document.querySelectorAll('.star-btn').forEach((b,i) => { b.classList.toggle('active',i<selectedRating); b.style.color=''; });
+  document.getElementById('starLabel').textContent = selectedRating ? `${selectedRating}/5 — ${starLabels[selectedRating]}` : 'Click to rate';
+}
+
+// ── Type chips ────────────────────────────────────────────
+document.querySelectorAll('.type-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('.type-chip').forEach(c=>c.classList.remove('selected'));
+    chip.classList.add('selected'); selectedType=chip.dataset.type;
+    document.getElementById('severitySection').classList.toggle('show', selectedType==='Bug Report');
+    document.getElementById('err-type').classList.remove('show'); checkSubmit();
+  });
+});
+
+// ── Page chips ────────────────────────────────────────────
+document.querySelectorAll('.page-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    const was = chip.classList.contains('selected');
+    document.querySelectorAll('.page-chip').forEach(c=>c.classList.remove('selected'));
+    if (!was) { chip.classList.add('selected'); selectedPage=chip.dataset.page; } else selectedPage='';
+  });
+});
+
+// ── Severity ──────────────────────────────────────────────
+document.querySelectorAll('.sev-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('.sev-chip').forEach(c=>c.classList.remove('selected'));
+    chip.classList.add('selected'); selectedSeverity=chip.dataset.sev;
+  });
+});
+
+// ── Recommend ─────────────────────────────────────────────
+document.querySelectorAll('.rec-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.rec-btn').forEach(b=>b.classList.remove('selected'));
+    btn.classList.add('selected'); selectedRecommend=btn.dataset.rec;
+  });
+});
+
+// ── Char counter ──────────────────────────────────────────
+document.getElementById('fb-message').addEventListener('input', function() {
+  const len=this.value.length, counter=document.getElementById('charCounter');
+  counter.textContent=`${len} / ${MAX_CHARS}`;
+  counter.className='char-counter'+(len>MAX_CHARS*.9?' warn':'')+(len>=MAX_CHARS?' over':'');
+  document.getElementById('err-message').classList.remove('show'); checkSubmit();
+});
+
+// ── Email ─────────────────────────────────────────────────
+document.getElementById('fb-email').addEventListener('blur', function() {
+  const val=this.value.trim();
+  const bad = val && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+  this.classList.toggle('error', bad);
+  document.getElementById('err-email').classList.toggle('show', bad); checkSubmit();
+});
+
+// ── Screenshot ────────────────────────────────────────────
+document.getElementById('fb-screenshot').addEventListener('change', function() {
+  const file=this.files[0]; if (!file) return;
+  if (file.size > 5*1024*1024) { document.getElementById('err-file').classList.add('show'); this.value=''; return; }
+  document.getElementById('err-file').classList.remove('show'); uploadedFile=file;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    document.getElementById('previewImg').src=e.target.result;
+    document.getElementById('previewName').textContent=file.name;
+    document.getElementById('uploadPrompt').style.display='none';
+    document.getElementById('uploadPreview').classList.add('show');
+    document.getElementById('uploadZone').classList.add('has-file');
+  };
+  reader.readAsDataURL(file);
+});
+document.getElementById('removeFile').addEventListener('click', () => {
+  document.getElementById('fb-screenshot').value='';
+  document.getElementById('uploadPrompt').style.display='';
+  document.getElementById('uploadPreview').classList.remove('show');
+  document.getElementById('uploadZone').classList.remove('has-file');
+  uploadedFile=null;
+});
+const zone=document.getElementById('uploadZone');
+zone.addEventListener('dragover',e=>{e.preventDefault();zone.style.borderColor='#4f46e5';});
+zone.addEventListener('dragleave',()=>{zone.style.borderColor='';});
+zone.addEventListener('drop',e=>{
+  e.preventDefault(); zone.style.borderColor='';
+  const f=e.dataTransfer.files[0];
+  if (f&&f.type.startsWith('image/')) { const dt=new DataTransfer(); dt.items.add(f); document.getElementById('fb-screenshot').files=dt.files; document.getElementById('fb-screenshot').dispatchEvent(new Event('change')); }
+});
+
+// ── Enable submit ─────────────────────────────────────────
+function checkSubmit() {
+  const emailOk = !document.getElementById('err-email').classList.contains('show');
+  const msgLen  = document.getElementById('fb-message').value.trim().length;
+  document.getElementById('submitBtn').disabled = !(selectedRating>0 && selectedType && msgLen>=MIN_CHARS && msgLen<=MAX_CHARS && emailOk);
+}
+
+// ── Smart response by type ────────────────────────────────
+function getSmartResponse(type, name, rating, severity) {
+  const hi    = name ? `, ${name}` : '';
+  const stars = '★'.repeat(rating) + '☆'.repeat(5-rating);
+
+  const responses = {
+    'Bug Report': {
+      bannerClass: 'bug',
+      icon: '🐛',
+      title: `Bug Report Received${hi}!`,
+      msg: `Your feedback is recorded. We'll work on fixing this issue as soon as possible. Thanks for pointing it out — reports like yours make TRAKN better for everyone. ${severity ? `<br><br>Severity marked as <strong>${severity}</strong>.` : ''}`,
+      priority: severity==='High' ? 'high' : severity==='Medium' ? 'medium' : 'low',
+      priorityLabel: severity ? `${severity} Priority Bug` : 'Bug Logged'
+    },
+    'Feature Request': {
+      bannerClass: 'feature',
+      icon: '✨',
+      title: `Great Idea${hi}!`,
+      msg: `We've noted your feature suggestion and will seriously consider adding it to TRAKN. Your input shapes our roadmap — thank you for taking the time!`,
+      priority: 'info',
+      priorityLabel: 'Feature Request Noted'
+    },
+    'UI/UX Issue': {
+      bannerClass: 'ui',
+      icon: '🎨',
+      title: `Thanks for the Heads-Up${hi}!`,
+      msg: `We've recorded your UI/UX concern. Our team will review the experience and work on improving it. Every detail matters to us — thanks for helping us polish TRAKN.`,
+      priority: 'medium',
+      priorityLabel: 'UX Issue Logged'
+    },
+    'General Feedback': {
+      bannerClass: 'general',
+      icon: '💬',
+      title: `Thanks for Your Feedback${hi}!`,
+      msg: `We really appreciate you taking the time to share your thoughts with us. Your feedback helps us understand what's working and what we can do better.`,
+      priority: 'info',
+      priorityLabel: 'General Feedback'
+    }
+  };
+
+  // Rating-only override (short message, no type selected beyond rating)
+  if (rating && !document.getElementById('fb-message').value.trim()) {
+    return {
+      bannerClass: 'rating',
+      icon: rating>=4 ? '🌟' : rating===3 ? '😊' : '🙏',
+      title: `Thanks for Rating${hi}!`,
+      msg: `You gave us ${stars} (${rating}/5). ${rating>=4 ? "We're thrilled you're enjoying TRAKN!" : rating===3 ? "We'll keep working to earn 5 stars from you!" : "We appreciate your honesty and will work hard to improve."}`,
+      priority: null,
+      priorityLabel: ''
+    };
+  }
+
+  return responses[type] || responses['General Feedback'];
+}
+
+// ── Submit ────────────────────────────────────────────────
+document.getElementById('feedbackForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  let valid=true;
+  if (!selectedRating)  { document.getElementById('err-rating').classList.add('show'); valid=false; }
+  if (!selectedType)    { document.getElementById('err-type').classList.add('show');   valid=false; }
+  const msg=document.getElementById('fb-message').value.trim();
+  if (msg.length<MIN_CHARS||msg.length>MAX_CHARS) { document.getElementById('err-message').classList.add('show'); valid=false; }
+  if (!valid) return;
+
+  const btn=document.getElementById('submitBtn');
+  btn.disabled=true;
+  btn.innerHTML=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Sending…`;
+
+  await new Promise(r=>setTimeout(r,900));
+
+  // Save to inbox
+  const ref='REF-'+Math.random().toString(36).substring(2,10).toUpperCase();
+  const entry = {
+    id:         ref,
+    date:       new Date().toISOString(),
+    name:       document.getElementById('fb-name').value.trim()  || 'Anonymous',
+    email:      document.getElementById('fb-email').value.trim() || '',
+    rating:     selectedRating,
+    type:       selectedType,
+    page:       selectedPage,
+    severity:   selectedSeverity,
+    recommend:  selectedRecommend,
+    message:    msg,
+    reply:      ''
+  };
+  const inbox=getInbox(); inbox.unshift(entry); saveInbox(inbox);
+  updateInboxCount();
+
+  // Build success response
+  const resp=getSmartResponse(selectedType, document.getElementById('fb-name').value.trim(), selectedRating, selectedSeverity);
+
+  document.getElementById('feedbackForm').style.display='none';
+  const screen=document.getElementById('successScreen');
+  const banner=document.getElementById('successBanner');
+  banner.className='success-banner '+resp.bannerClass;
+  document.getElementById('successIcon').textContent  = resp.icon;
+  document.getElementById('successTitle').textContent = resp.title;
+  document.getElementById('successMsg').innerHTML     = resp.msg;
+  document.getElementById('successRef').textContent   = ref;
+
+  const priEl=document.getElementById('successPriority');
+  if (resp.priority && resp.priorityLabel) {
+    priEl.innerHTML=`<span class="priority-badge ${resp.priority}">${resp.priorityLabel}</span>`;
+  } else priEl.innerHTML='';
+
+  screen.classList.add('show');
+});
+
+// ── Reset ─────────────────────────────────────────────────
+function resetForm() {
+  document.getElementById('feedbackForm').reset();
+  document.getElementById('feedbackForm').style.display='';
+  document.getElementById('successScreen').classList.remove('show');
+  selectedRating=selectedType=selectedPage=selectedSeverity=selectedRecommend=''; uploadedFile=null;
+  document.querySelectorAll('.type-chip,.page-chip,.sev-chip,.rec-btn').forEach(c=>c.classList.remove('selected'));
+  document.querySelectorAll('.star-btn').forEach(b=>{b.classList.remove('active');b.style.color='';});
+  document.getElementById('starLabel').textContent='Click to rate';
+  document.getElementById('charCounter').textContent='0 / 500';
+  document.getElementById('charCounter').className='char-counter';
+  document.getElementById('uploadPrompt').style.display='';
+  document.getElementById('uploadPreview').classList.remove('show');
+  document.getElementById('uploadZone').classList.remove('has-file');
+  document.querySelectorAll('.field-error').forEach(e=>e.classList.remove('show'));
+  document.getElementById('severitySection').classList.remove('show');
+  document.getElementById('submitBtn').disabled=true;
+  document.getElementById('submitBtn').innerHTML=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Submit Feedback`;
+}
+
+// ── Admin inbox ───────────────────────────────────────────
+let currentFilter='all';
+function toggleAdmin() {
+  const panel=document.getElementById('adminPanel');
+  const form =document.getElementById('feedbackForm');
+  const suc  =document.getElementById('successScreen');
+  const isOpen=panel.classList.contains('show');
+  panel.classList.toggle('show', !isOpen);
+  form.style.display  = isOpen ? '' : 'none';
+  suc.classList.toggle('show', false);
+  if (!isOpen) renderInbox();
+}
+
+function filterFeedback(f, btn) {
+  currentFilter=f;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderInbox();
+}
+
+const typeBadgeStyle = {
+  'Bug Report':       'background:#fee2e2;color:#991b1b;',
+  'Feature Request':  'background:#d1fae5;color:#065f46;',
+  'UI/UX Issue':      'background:#ede9fe;color:#5b21b6;',
+  'General Feedback': 'background:#e0f2fe;color:#075985;'
+};
+const sevStyle = { Low:'background:#d1fae5;color:#065f46;', Medium:'background:#fef3c7;color:#92400e;', High:'background:#fee2e2;color:#991b1b;' };
+
+function renderInbox() {
+  const all = getInbox();
+  const filtered = currentFilter==='all' ? all : all.filter(f=>f.type===currentFilter);
+  const list=document.getElementById('inboxList');
+
+  if (!filtered.length) {
+    list.innerHTML=`<div class="empty-admin">${currentFilter==='all'?'No feedback yet.':'No '+currentFilter+' feedback yet.'}</div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(f => {
+    const stars = '★'.repeat(f.rating)+'☆'.repeat(5-f.rating);
+    const date  = new Date(f.date).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    const typeStyle = typeBadgeStyle[f.type]||'background:#f1f5f9;color:#475569;';
+    const replyHtml = f.reply
+      ? `<div class="reply-existing"><div class="re-label">Your Reply</div>${f.reply}</div>`
+      : '';
+    return `
+    <div class="fb-item" id="inbox-${f.id}">
+      <div class="fb-item-header">
+        <div class="fb-item-meta">
+          <div class="fb-item-name">${f.name} ${f.email?`<span style="font-weight:400;font-size:.75rem;color:var(--text-gray);">&lt;${f.email}&gt;</span>`:''}</div>
+          <div class="fb-item-date">${date} · ${f.page||'No page selected'}</div>
+        </div>
+        <span class="fb-item-type-badge" style="${typeStyle}">${f.type}</span>
+        ${f.severity?`<span class="priority-badge ${f.severity.toLowerCase()}" style="margin:0;">${f.severity}</span>`:''}
+      </div>
+      <div class="stars-mini">${stars}</div>
+      <div class="fb-item-msg">${f.message}</div>
+      ${f.recommend?`<div class="fb-item-page">${f.recommend==='yes'?'👍 Would recommend':'👎 Would not recommend'}</div>`:''}
+      <div class="reply-box">
+        ${replyHtml}
+        <textarea class="reply-input" id="reply-${f.id}" placeholder="Write a reply to ${f.name}..." rows="2">${f.reply||''}</textarea>
+        <button class="reply-send-btn" onclick="saveReply('${f.id}')">💬 Save Reply</button>
+        <button class="reply-send-btn" style="background:#dc3545;margin-left:.4rem;" onclick="deleteEntry('${f.id}')">🗑 Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function saveReply(id) {
+  const replyText=document.getElementById('reply-'+id).value.trim();
+  const inbox=getInbox();
+  const idx=inbox.findIndex(f=>f.id===id);
+  if (idx>-1) { inbox[idx].reply=replyText; saveInbox(inbox); renderInbox(); FinFlow.Toast.success('Reply saved!'); }
+}
+
+function deleteEntry(id) {
+  if (!confirm('Delete this feedback entry?')) return;
+  const inbox=getInbox().filter(f=>f.id!==id);
+  saveInbox(inbox); updateInboxCount(); renderInbox();
+}
+
+function clearAll() {
+  if (!confirm('Clear ALL feedback? This cannot be undone.')) return;
+  saveInbox([]); updateInboxCount(); renderInbox();
+}
+
+// spin keyframe
+const s=document.createElement('style');
+s.textContent='@keyframes spin{to{transform:rotate(360deg)}}';
+document.head.appendChild(s);
+</script>
+</body>
+</html>

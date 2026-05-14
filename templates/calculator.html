@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculators - TRAKN</title>
+    <!-- Reference Pattern: Link to external CSS -->
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="icon" type="image/png" href="/static/images/favicon.png">
+    
+    <!-- Restored Internal Styles to fix the "damaged design" -->
+    <style>
+        /* Calculator Specific Styles */
+        .content-area { padding: 28px 32px; flex: 1; }
+        .section-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text-faint); margin-bottom: 14px; }
+        .calc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-bottom: 28px; }
+        .calc-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; cursor: pointer; transition: all 0.15s; display: flex; flex-direction: column; gap: 8px; }
+        .calc-card:hover { border-color: var(--border2); background: var(--surface2); }
+        .calc-card.active { border-color: var(--accent); background: var(--accent-dim); }
+        .calc-icon { width: 34px; height: 34px; background: var(--surface2); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 16px; }
+        .calc-card.active .calc-icon { background: rgba(245,166,35,0.18); }
+        .calc-name { font-size: 12.5px; font-weight: 600; color: var(--text); line-height: 1.3; }
+        .calc-tag { font-size: 10px; color: var(--text-faint); font-weight: 500; }
+
+        /* PANEL */
+        .calc-panel { display: none; animation: su 0.22s ease; }
+        .calc-panel.visible { display: block; }
+        @keyframes su { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+        .panel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+
+        /* CARD */
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+        .card-header { display: flex; align-items: center; justify-content: space-between; padding: 15px 20px; border-bottom: 1px solid var(--border); }
+        .card-title { font-size: 14px; font-weight: 600; }
+        .card-body { padding: 20px; }
+
+        /* FORM */
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 11px; font-weight: 500; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-control, .form-select { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-family: inherit; font-size: 14px; padding: 10px 12px; outline: none; transition: border-color 0.15s, box-shadow 0.15s; -moz-appearance: textfield; }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; }
+        .form-control:focus, .form-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+        .form-select { appearance: none; cursor: pointer; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .btn-primary { display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%; padding: 11px; background: var(--accent); border: none; border-radius: var(--radius-sm); color: #000; font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; transition: all 0.15s; margin-top: 4px; }
+        .btn-primary:hover { filter: brightness(1.08); }
+
+        /* RESULTS */
+        .result-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 20px; text-align: center; gap: 10px; }
+        .result-empty svg { opacity: 0.15; }
+        .result-empty p { font-size: 13px; color: var(--text-muted); }
+        .result-body { display: none; flex-direction: column; }
+        .result-body.visible { display: flex; }
+        .result-hero { padding: 20px; border-bottom: 1px solid var(--border); background: linear-gradient(135deg, var(--surface2), var(--surface)); }
+        .result-label { font-size: 10px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+        .result-amount { font-size: 32px; font-weight: 700; letter-spacing: -1px; color: var(--accent); margin-bottom: 2px; }
+        .result-caption { font-size: 11px; color: var(--text-muted); }
+        .breakdown-list { display: flex; flex-direction: column; }
+        .breakdown-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--border); }
+        .breakdown-item:last-child { border-bottom: none; }
+        .b-label { font-size: 13px; color: var(--text-muted); }
+        .b-value { font-size: 13px; font-weight: 600; color: var(--text); }
+        .b-value.green { color: var(--green); } .b-value.red { color: var(--red); } .b-value.orange { color: var(--accent); } .b-value.blue { color: var(--blue); }
+        .chart-row { display: flex; align-items: center; gap: 16px; padding: 14px 20px; border-top: 1px solid var(--border); background: var(--surface2); }
+        .legend { display: flex; flex-direction: column; gap: 7px; }
+        .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); }
+        .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+        @media (max-width: 820px) { .panel-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 680px) { .content-area { padding: 20px 16px; } .form-row { grid-template-columns: 1fr; } .calc-grid { grid-template-columns: repeat(3,1fr); gap: 8px; } }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar (Matched to Reference) -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="fin">TRAK</span><span class="flow">N</span>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <span class="nav-section-title">Main</span>
+                <a href="/dashboard.html" class="nav-item ">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
+                    Dashboard
+                </a>
+                <a href="/transactions.html" class="nav-item ">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="7" x2="19" y2="7"></line>
+                    <line x1="5" y1="11" x2="16" y2="11"></line>
+                    <path d="M5 7c6 0 7 4 7 6s-2 4-7 4"></path>
+                    <line x1="10" y1="15" x2="17" y2="21"></line>
+                    </svg>
+                    Transactions
+                </a>
+                <a href="/income.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="16"></line>
+                        <line x1="8" y1="12" x2="16" y2="12"></line>
+                    </svg>
+                    Income
+                </a>
+                <a href="/expense.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="8" y1="12" x2="16" y2="12"></line>
+                    </svg>
+                    Expenses
+                </a>
+                <a href="/budget.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <circle cx="12" cy="12" r="6"></circle>
+                        <circle cx="12" cy="12" r="2"></circle>
+                    </svg>
+                    Budgets
+                </a>
+                <a href="/recurring.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="17 1 21 5 17 9"></polyline>
+                    <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+                    <polyline points="7 23 3 19 7 15"></polyline>
+                    <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+                    </svg>
+                    Recurring
+                </a>
+                <a href="/goals.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <circle cx="12" cy="12" r="6"></circle>
+                    <circle cx="12" cy="12" r="2"></circle>
+                    </svg>
+                    Goals
+                </a>
+                <a href="/networth.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="6" width="20" height="12" rx="2"></rect>
+                    <path d="M16 12h4"></path>
+                    <circle cx="16" cy="12" r="1"></circle>
+                    </svg>
+                    Net Worth
+                </a>
+                
+                <span class="nav-section-title">Insights</span>
+                <a href="/analytics.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="20" x2="18" y2="10"></line>
+                        <line x1="12" y1="20" x2="12" y2="4"></line>
+                        <line x1="6" y1="20" x2="6" y2="14"></line>
+                    </svg>
+                    Analytics
+                </a>
+                <a href="/calculator.html" class="nav-item active">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="4" y="2" width="16" height="20" rx="2"></rect>
+                    <line x1="8" y1="6" x2="16" y2="6"></line>
+                    <circle cx="8" cy="11" r="1"></circle>
+                    <circle cx="12" cy="11" r="1"></circle>
+                    <circle cx="16" cy="11" r="1"></circle>
+                    <circle cx="8" cy="15" r="1"></circle>
+                    <circle cx="12" cy="15" r="1"></circle>
+                    <circle cx="16" cy="15" r="1"></circle>
+                    </svg>
+                    Calculator
+                </a>
+                
+                <a href="/news.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+                    <line x1="7" y1="8" x2="17" y2="8"></line>
+                    <line x1="7" y1="12" x2="17" y2="12"></line>
+                    <line x1="7" y1="16" x2="13" y2="16"></line>
+                    <line x1="4" y1="4" x2="4" y2="20"></line>
+                    </svg>
+                    News
+                </a>
+                <a href="/import.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    Import
+                </a>
+                <a href="/feedback.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z">
+                        </path>
+                    </svg>
+                    Feedback
+                </a>
+                <span class="nav-section-title">Settings</span>
+                <a href="/admin.html" class="nav-item admin-link" style="display: none;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                    Admin
+                </a>
+                <a href="/profile.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    Profile
+                </a>
+                <a href="#" class="nav-item" data-logout>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                    Sign Out
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header (Matched to Reference) -->
+            <header class="page-header">
+                <div class="header-left">
+                    <h1>Calculators</h1>
+                    <p id="currentMonth"></p>
+                </div>
+                <div class="header-right">
+                    <button class="theme-toggle" data-theme-toggle>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                        <span>Dark</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Calculator Specific Content (Restored Design) -->
+            <div class="content-area">
+                <div class="section-label">Choose a Calculator</div>
+                <div class="calc-grid">
+                    <div class="calc-card active" data-calc="si" onclick="sel('si')"><div class="calc-icon">📐</div><div class="calc-name">Simple Interest</div><div class="calc-tag">SI</div></div>
+                    <div class="calc-card" data-calc="ci" onclick="sel('ci')"><div class="calc-icon">📈</div><div class="calc-name">Compound Interest</div><div class="calc-tag">CI</div></div>
+                    <div class="calc-card" data-calc="emi" onclick="sel('emi')"><div class="calc-icon">🏦</div><div class="calc-name">EMI Loan</div><div class="calc-tag">LOAN</div></div>
+                    <div class="calc-card" data-calc="fd" onclick="sel('fd')"><div class="calc-icon">🔒</div><div class="calc-name">Fixed Deposit</div><div class="calc-tag">FD</div></div>
+                    <div class="calc-card" data-calc="rd" onclick="sel('rd')"><div class="calc-icon">📅</div><div class="calc-name">Recurring Deposit</div><div class="calc-tag">RD</div></div>
+                    <div class="calc-card" data-calc="sip" onclick="sel('sip')"><div class="calc-icon">🚀</div><div class="calc-name">SIP Investment</div><div class="calc-tag">SIP</div></div>
+                    <div class="calc-card" data-calc="swp" onclick="sel('swp')"><div class="calc-icon">💸</div><div class="calc-name">SWP Withdrawal</div><div class="calc-tag">SWP</div></div>
+                    <div class="calc-card" data-calc="inflation" onclick="sel('inflation')"><div class="calc-icon">📊</div><div class="calc-name">Inflation</div><div class="calc-tag">INF</div></div>
+                    <div class="calc-card" data-calc="interest" onclick="sel('interest')"><div class="calc-icon">💰</div><div class="calc-name">SI vs CI</div><div class="calc-tag">COMPARE</div></div>
+                    <div class="calc-card" data-calc="normal" onclick="sel('normal')">
+  <div class="calc-icon">🔢</div>
+  <div class="calc-name">Calculator</div>
+  <div class="calc-tag">BASIC</div>
+</div>
+                </div>
+
+                <!-- SIMPLE INTEREST -->
+                <div id="panel-si" class="calc-panel visible">
+                    <div class="panel-grid">
+                        <div class="card"><div class="card-header"><span class="card-title">Simple Interest</span></div><div class="card-body">
+                          <div class="form-group"><label>Principal Amount (₹)</label><input type="number" class="form-control" id="si-p" placeholder="100000" oninput="calcSI()"></div>
+                          <div class="form-row"><div class="form-group"><label>Annual Rate (%)</label><input type="number" class="form-control" id="si-r" placeholder="7.5" step="0.1" oninput="calcSI()"></div><div class="form-group"><label>Time (Years)</label><input type="number" class="form-control" id="si-t" placeholder="5" oninput="calcSI()"></div></div>
+                          <button class="btn-primary" onclick="calcSI()">Calculate →</button>
+                        </div></div>
+                        <div class="card"><div class="card-header"><span class="card-title">Result</span></div>
+                          <div class="result-empty" id="si-empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/></svg><p>Enter values to see results</p></div>
+                          <div class="result-body" id="si-result">
+                            <div class="result-hero"><div class="result-label">Interest Earned</div><div class="result-amount" id="si-interest">₹0</div><div class="result-caption">Over the full investment period</div></div>
+                            <div class="breakdown-list">
+                              <div class="breakdown-item"><span class="b-label">Total Amount</span><span class="b-value orange" id="si-total">₹0</span></div>
+                              <div class="breakdown-item"><span class="b-label">Principal</span><span class="b-value" id="si-principal">₹0</span></div>
+                              <div class="breakdown-item"><span class="b-label">Monthly Interest</span><span class="b-value green" id="si-monthly">₹0</span></div>
+                            </div>
+                            <div class="chart-row"><svg id="si-donut" width="80" height="80" viewBox="0 0 80 80"></svg><div class="legend"><div class="legend-item"><div class="legend-dot" style="background:#f5a623"></div>Interest</div><div class="legend-item"><div class="legend-dot" style="background:#5b9cf6"></div>Principal</div></div></div>
+                          </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- COMPOUND INTEREST -->
+                <div id="panel-ci" class="calc-panel">
+                    <div class="panel-grid">
+                        <div class="card"><div class="card-header"><span class="card-title">Compound Interest</span></div><div class="card-body">
+                          <div class="form-group"><label>Principal (₹)</label><input type="number" class="form-control" id="ci-p" placeholder="100000" oninput="calcCI()"></div>
+                          <div class="form-row"><div class="form-group"><label>Annual Rate (%)</label><input type="number" class="form-control" id="ci-r" placeholder="8" step="0.1" oninput="calcCI()"></div><div class="form-group"><label>Time (Years)</label><input type="number" class="form-control" id="ci-t" placeholder="10" oninput="calcCI()"></div></div>
+                          <div class="form-group"><label>Compounding</label><select class="form-select" id="ci-n" onchange="calcCI()"><option value="1">Annually</option><option value="2">Semi-Annually</option><option value="4">Quarterly</option><option value="12" selected>Monthly</option><option value="365">Daily</option></select></div>
+                          <button class="btn-primary" onclick="calcCI()">Calculate →</button>
+                        </div></div>
+                        <div class="card"><div class="card-header"><span class="card-title">Result</span></div>
+                          <div class="result-empty" id="ci-empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/></svg><p>Enter values to see results</p></div>
+                          <div class="result-body" id="ci-result">
+                            <div class="result-hero"><div class="result-label">Maturity Amount</div><div class="result-amount" id="ci-total">₹0</div><div class="result-caption">At end of investment period</div></div>
+                            <div class="breakdown-list">
+                              <div class="breakdown-item"><span class="b-label">Compound Interest</span><span class="b-value orange" id="ci-interest">₹0</span></div>
+                              <div class="breakdown-item"><span class="b-label">Principal</span><span class="b-value" id="ci-principal">₹0</span></div>
+                              <div class="breakdown-item"><span class="b-label">Total Gain %</span><span class="b-value green" id="ci-gain">0%</span></div>
+                            </div>
+                            <div class="chart-row"><svg id="ci-donut" width="80" height="80" viewBox="0 0 80 80"></svg><div class="legend"><div class="legend-item"><div class="legend-dot" style="background:#f5a623"></div>Interest</div><div class="legend-item"><div class="legend-dot" style="background:#5b9cf6"></div>Principal</div></div></div>
+                          </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- EMI -->
+                <div id="panel-emi" class="calc-panel">
+                    <div class="panel-grid">
+                        <div class="card"><div class="card-header"><span class="card-title">EMI Calculator</span></div><div class="card-body">
+                          <div class="form-group"><label>Loan Amount (₹)</label><input type="number" class="form-control" id="emi-p" placeholder="500000" oninput="calcEMI()"></div>
+                          <div class="form-row"><div class="form-group"><label>Interest Rate (%)</label><input type="number" class="form-control" id="emi-r" placeholder="8.5" step="0.1" oninput="calcEMI()"></div><div class="form-group"><label>Tenure (Years)</label><input type="number" class="form-control" id="emi-t" placeholder="20" oninput="calcEMI()"></div></div>
+                          <button class="btn-primary" onclick="calcEMI()">Calculate →</button>
+                        </div></div>
+                        <div class="card"><div class="card-header"><span class="card-title">Result</span></div>
+                          <div class="result-empty" id="emi-empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/></svg><p>Enter values to see results</p></div>
+                          <div class="result-body" id="emi-result">
+                            <div class="result-hero"><div class="result-label">Monthly EMI</div><div class="result-amount" id="emi-emi">₹0</div><div class="result-caption">Payable every month</div></div>
+                            <div class="breakdown-list">
+                              <div class="breakdown-item"><span class="b-label">Total Payment</span><span class="b-value orange" id="emi-total">₹0</span></div>
+                              <div class="breakdown-item"><span class="b-label">Total Interest</span><span class="b-value red" id="emi-interest">₹0</span></div>
+                              <div class="breakdown-item"><span class="b-label">Principal</span><span class="b-value" id="emi-principal">₹0</span></div>
+                            </div>
+                            <div class="chart-row"><svg id="emi-donut" width="80" height="80" viewBox="0 0 80 80"></svg><div class="legend"><div class="legend-item"><div class="legend-dot" style="background:#e85555"></div>Interest</div><div class="legend-item"><div class="legend-dot" style="background:#5b9cf6"></div>Principal</div></div></div>
+                          </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FD -->
+                <div id="panel-fd" class="calc-panel">
+                    <div class="panel-grid">
+                        <div class="card"><div class="card-header"><span class="card-title">Fixed Deposit</span></div><div class="card-body">
+                          <div class="form-group"><label>Deposit Amount (₹)</label><input type="number" class="form-control" id="fd-p" placeholder="200000" oninput="calcFD()"></div>
+                          <div class="form-row"><div class="form-group"><label>Annual Rate (%)</label><input type="number" class="form-control" id="fd-r" placeholder="7.0" step="0.1" oninput="calcFD()"></div><div class="form-group"><label>Tenure (Years)</label><input type="number" class="form-control" id="fd-t" placeholder="3" oninput="calcFD()"></div></div>
+                          <div class="form-group"><label>Compounding</label><select class="form-select" id="fd-n" onchange="calcFD()"><option value="1">Annually</option><option value="4" selected>Quarterly</option><option value="12">Monthly</option></select></div>
+                          <button class="btn-primary" onclick="calcFD()">Calculate →</button>
+                        </div></div>
+                        <div class="card"><div class="card-header"><span class="card-title">Result</span></div>
+                          <div class="result-empty" id="fd-empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/></svg><p>Enter values to see results</p></div>
+                          <div class="result-body" id="fd-result">
+                            <div class="result-hero"><div class="result-label">Maturity Value</div><div class="result-amount" id="fd-maturity">₹0</div><div class="result-caption">On maturity date</div></div>
+                            <div class="breakdown-list">
+                              <div class="breakdown-item"><span class="b-label">Interest Earned</span><span class="b-value green" id="fd-interest">₹0</span></div>
+                              <div class="breakdown-item"><span class="b-label">Principal</span><span class="b-value" id="fd-principal">₹0</span></div>
+                              <div class="breakdown-item"><span class="b-label">Effective Yield</span><span class="b-value blue" id="fd-yield">0%</span></div>
+                            </div>
+                            <div class="chart-row"><svg id="fd-donut" width="80" height="80" viewBox="0 0 80 80"></svg><div class="legend"><div class="legend-item"><div class="legend-dot" style="background:#4caf7d"></div>Interest</div><div class="legend-item"><div class="legend-dot" style="background:#5b9cf6"></div>Principal</div></div></div>
+                          </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RD -->
+                <div id="panel-rd" class="calc-panel">
+                    <div class="panel-grid">
+                        <div class="card"><div class="card-header"><span class="card-title">Recurring Deposit</span></div><div class="card-body">
+                          <div class="form-group"><label>Monthly Deposit (₹)</label><input type="number" class="form-control" id="rd-m" placeholder="5000" oninput="calcRD()"></div>
+                          <div class="form-row"><div class="form-group"><label>Annual Rate (%)</label><input type="number" class="form-control" id="rd-r" placeholder="6.5" step="0.1" oninput="calcRD()"></div><div class="form-group"><label>Tenure (Years)</label><input type="number" class="form-control" id="rd-t" placeholder="5" oninput="calcRD()"></div></div>
+                          <button class="btn-primary" onclick="calcRD()">Calculate →</button>
+                        </div></div>
+                        <div class="card"><div class="card-header"><span class="card-title">Result</span></div>
+                          <div class="result-empty" id="rd-empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/></svg><p>Enter values to see results</p></div>
+                          <div class="result-body" id="rd-result">
+                            <div class="result-hero"><div class="result-label">Maturity Value</div><div class="result-amount" id="rd-maturity">₹0</div><div class="result-caption">Total value at maturity</div></div>
+                            <div class="breakdown-list">
+                              <div class="breakdown-item"><span class="b-label">Interest Earned</span><span class="b-value green" id="rd-interest">₹0</span></div>
+                              <div class="breakdown-item"><span class="b-label">Total Deposited</span><span class="b-value" id="rd-invested">₹0</span></div>
+                              <div class="breakdown-item"><span class="b-label">Monthly Deposit</span><span class="b-value blue" id="rd-monthly">₹0</span></div>
+                            </div>
+                            <div class="chart-row"><svg id="rd-donut" width="80" height="80" viewBox="0 0 80 80"></svg><div class="legend"><div class="legend-item"><div class="legend-dot" style="background:#4caf7d"></div>Interest</div><div class="legend-item"><div class="legend-dot" style="background:#5b9cf6"></div>Deposited</div></div></div>
+                          </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SIP -->
+                <div id="panel-sip" class="calc-panel">
+                    <div class="panel-grid">
+                        <div class="card"><div class="card-header"><span class="card-title">SIP Investment</span></div><div class="card-body">
+                          <div class="form-group"><label>Monthly Investment (₹)</label><input type="number" class="form-control" id="sip-m" placeholder="10000" oninput="calcSIP()"></div>
+                          <div class="form-row"><div class="form-group"><label>Expected Return (%)</label><input type="number" class="form-control" id="sip-r" placeholder="12" step="0.1" oninput="calcSIP()"></div><div class="form-group"><label>Period (Years)</label><input type="number" class="form-control" id="sip-t" placeholder="15" oninput="calcSIP()"></div></div>
+                          <button class="btn-primary" onclick="calcSIP()">Calculate →</button>
+                        </div></div>
+                        <div class="card"><div class="card-header"><span class="card-title">Result</span></div>
+                          <div class="result-empty" id="sip-empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/></svg><p>Enter values to see results</p></div>
+                          <div class="result-body" id="sip-result">
+                            <div class="result-hero"><div class="result-label">Wealth Gained</div><div class="result-amount" id="sip-wealth">₹0</div><div class="result-caption">Expected corpus at maturity</div></div>
+                            <div class="breakdown-list">
+                              <div class="breakdown-item"><span class="b-label">Est. Returns</span><span class="b-value green" id="sip-returns">₹0</span></div>
+                              <div class="breakdown-item"><span class="b-label">Total Invested</span><span class="b-value" id="sip-invested">₹0</span></div>
+                              <div class="breakdown-item"><span class="b-label">Multiplier</span><span class="b-value orange" id="sip-mult">0x</span></div>
+                            </div>
+                            <div class="chart-row"><svg id="sip-donut" width="80" height="80" viewBox="0 0 80 80"></svg><div class="legend"><div class="legend-item"><div class="legend-dot" style="background:#4caf7d"></div>Returns</div><div class="legend-item"><div class="legend-dot" style="background:#5b9cf6"></div>Invested</div></div></div>
+                          </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SWP -->
+                <div id="panel-swp" class="calc-panel">
+                    <div class="panel-grid">
+                        <div class="card"><div class="card-header"><span class="card-title">SWP Withdrawal</span></div><div class="card-body">
+                          <div class="form-group"><label>Total Corpus (₹)</label><input type="number" class="form-control" id="swp-corpus" placeholder="5000000" oninput="calcSWP()"></div>
+                          <div class="form-group"><label>Monthly Withdrawal (₹)</label><input type="number" class="form-control" id="swp-m" placeholder="30000" oninput="calcSWP()"></div>
+                          <div class="form-row"><div class="form-group"><label>Annual Return (%)</label><input type="number" class="form-control" id="swp-r" placeholder="10" step="0.1" oninput="calcSWP()"></div><div class="form-group"><label>Period (Years)</label><input type="number" class="form-control" id="swp-t" placeholder="20" oninput="calcSWP()"></div></div>
+                          <button class="btn-primary" onclick="calcSWP()">Calculate →</button>
+                        </div></div>
+                        <div class="card"><div class="card-header"><span class="card-title">Result</span></div>
+                          <div class="result-empty" id="swp-empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/></svg><p>Enter values to see results</p></div>
+                          <div class="result-body" id="swp-result">
+                            <div class="result-hero"><div class="result-label">Total Withdrawn</div><div class="result-amount" id="swp-total">₹0</div><div class="result-caption">Over the withdrawal period</div></div>
+                            <div class="breakdown-list">
+                              <div class="breakdown-item"><span class="b-label">Remaining Corpus</span><span class="b-value green" id="swp-remaining">₹0</span></div>
+                              <div class="breakdown-item"><span class="b-label">Initial Corpus</span><span class="b-value" id="swp-corpus-val">₹0</span></div>
+                              <div class="breakdown-item"><span class="b-label">Monthly Withdrawal</span><span class="b-value blue" id="swp-monthly">₹0</span></div>
+                            </div>
+                          </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- INFLATION -->
+                <div id="panel-inflation" class="calc-panel">
+                    <div class="panel-grid">
+                        <div class="card"><div class="card-header"><span class="card-title">Inflation Calculator</span></div><div class="card-body">
+                          <div class="form-group"><label>Current Amount (₹)</label><input type="number" class="form-control" id="inf-amount" placeholder="1000000" oninput="calcInflation()"></div>
+                          <div class="form-row"><div class="form-group"><label>Inflation Rate (%)</label><input type="number" class="form-control" id="inf-r" placeholder="6" step="0.1" oninput="calcInflation()"></div><div class="form-group"><label>Time (Years)</label><input type="number" class="form-control" id="inf-t" placeholder="10" oninput="calcInflation()"></div></div>
+                          <button class="btn-primary" onclick="calcInflation()">Calculate →</button>
+                        </div></div>
+                        <div class="card"><div class="card-header"><span class="card-title">Result</span></div>
+                          <div class="result-empty" id="inflation-empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/></svg><p>Enter values to see results</p></div>
+                          <div class="result-body" id="inflation-result">
+                            <div class="result-hero"><div class="result-label">Future Value Needed</div><div class="result-amount" id="inf-future">₹0</div><div class="result-caption">To match today's purchasing power</div></div>
+                            <div class="breakdown-list">
+                              <div class="breakdown-item"><span class="b-label">Purchasing Power Loss</span><span class="b-value red" id="inf-loss">₹0</span></div>
+                              <div class="breakdown-item"><span class="b-label">Current Value</span><span class="b-value" id="inf-current">₹0</span></div>
+                              <div class="breakdown-item"><span class="b-label">Erosion %</span><span class="b-value red" id="inf-erosion">0%</span></div>
+                            </div>
+                            <div class="chart-row"><svg id="inflation-donut" width="80" height="80" viewBox="0 0 80 80"></svg><div class="legend"><div class="legend-item"><div class="legend-dot" style="background:#e85555"></div>Loss</div><div class="legend-item"><div class="legend-dot" style="background:#5b9cf6"></div>Real Value</div></div></div>
+                          </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ADVANCED CALCULATOR -->
+<div id="panel-normal" class="calc-panel">
+  <div style="display:flex;justify-content:center">
+    <div style="width:340px;border-radius:16px;overflow:hidden;border:1px solid var(--border)">
+
+      <div style="background:#1c1c1e;padding:24px 20px 16px;min-height:120px;display:flex;flex-direction:column;justify-content:flex-end;gap:4px">
+        <div style="font-size:11px;color:var(--accent);text-align:left;min-height:16px;font-weight:500;letter-spacing:.5px" id="nc-mem"></div>
+        <div style="font-size:13px;color:#636366;font-family:monospace;min-height:20px;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="nc-hist"></div>
+        <div style="font-size:15px;color:#8e8e93;font-family:monospace;min-height:22px;text-align:right;word-break:break-all;line-height:1.4" id="nc-expr"></div>
+        <div style="font-size:44px;font-weight:300;color:#f5f5f7;text-align:right;letter-spacing:-1.5px;word-break:break-all;line-height:1.1" id="nc-val">0</div>
+      </div>
+
+      <div style="background:#2c2c2e;display:grid;grid-template-columns:repeat(4,1fr);gap:1px">
+        <button class="nc-k nc-clr" onclick="nc('AC')">AC</button>
+        <button class="nc-k nc-fn" onclick="nc('+/-')">+/−</button>
+        <button class="nc-k nc-fn" onclick="nc('%')">%</button>
+        <button class="nc-k nc-op" onclick="nc('÷')">÷</button>
+
+        <button class="nc-k nc-fn2" onclick="nc('MC')">MC</button>
+        <button class="nc-k nc-fn2" onclick="nc('MR')">MR</button>
+        <button class="nc-k nc-fn2" onclick="nc('M+')">M+</button>
+        <button class="nc-k nc-fn2" onclick="nc('M-')">M−</button>
+
+        <button class="nc-k nc-num" onclick="nc('7')">7</button>
+        <button class="nc-k nc-num" onclick="nc('8')">8</button>
+        <button class="nc-k nc-num" onclick="nc('9')">9</button>
+        <button class="nc-k nc-op" onclick="nc('×')">×</button>
+
+        <button class="nc-k nc-num" onclick="nc('4')">4</button>
+        <button class="nc-k nc-num" onclick="nc('5')">5</button>
+        <button class="nc-k nc-num" onclick="nc('6')">6</button>
+        <button class="nc-k nc-op" onclick="nc('−')">−</button>
+
+        <button class="nc-k nc-num" onclick="nc('1')">1</button>
+        <button class="nc-k nc-num" onclick="nc('2')">2</button>
+        <button class="nc-k nc-num" onclick="nc('3')">3</button>
+        <button class="nc-k nc-op" onclick="nc('+')">+</button>
+
+        <button class="nc-k nc-num" style="grid-column:span 2;justify-content:flex-start;padding-left:28px" onclick="nc('0')">0</button>
+        <button class="nc-k nc-num" onclick="nc('.')">.</button>
+        <button class="nc-k nc-eq" onclick="nc('=')">=</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+                <!-- Si vs CI -->
+                <div id="panel-interest" class="calc-panel">
+                    <div class="panel-grid">
+                        <div class="card"><div class="card-header"><span class="card-title">SI vs CI Comparison</span></div><div class="card-body">
+                          <div class="form-group"><label>Principal (₹)</label><input type="number" class="form-control" id="int-p" placeholder="100000" oninput="calcInterest()"></div>
+                          <div class="form-row"><div class="form-group"><label>Annual Rate (%)</label><input type="number" class="form-control" id="int-r" placeholder="8" step="0.1" oninput="calcInterest()"></div><div class="form-group"><label>Time (Years)</label><input type="number" class="form-control" id="int-t" placeholder="5" oninput="calcInterest()"></div></div>
+                          <button class="btn-primary" onclick="calcInterest()">Calculate →</button>
+                        </div></div>
+                        <div class="card"><div class="card-header"><span class="card-title">Result</span></div>
+                          <div class="result-empty" id="interest-empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/></svg><p>Enter values to see results</p></div>
+                          <div class="result-body" id="interest-result">
+                            <div class="result-hero"><div class="result-label">CI earns extra over SI</div><div class="result-amount" id="int-diff">₹0</div><div class="result-caption">Advantage of compounding</div></div>
+                            <div class="breakdown-list">
+                              <div class="breakdown-item"><span class="b-label">Compound Interest</span><span class="b-value orange" id="int-ci">₹0</span></div>
+                              <div class="breakdown-item"><span class="b-label">Simple Interest</span><span class="b-value blue" id="int-si">₹0</span></div>
+                              <div class="breakdown-item"><span class="b-label">CI Total Amount</span><span class="b-value" id="int-ci-total">₹0</span></div>
+                              <div class="breakdown-item"><span class="b-label">SI Total Amount</span><span class="b-value" id="int-si-total">₹0</span></div>
+                            </div>
+                          </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+    <script>
+        // --- Reference Pattern Scripts ---
+        // Check if user is admin and show admin link
+        const isAdmin = localStorage.getItem('trakn-is-admin') === 'true';
+        if (isAdmin) {
+            document.querySelector('.admin-link').style.display = 'flex';
+        }
+
+        // Set current month
+        const now = new Date();
+        document.getElementById('currentMonth').textContent = now.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+
+        // --- Calculator Specific Logic ---
+        const fmt = n => '₹' + Math.round(n).toLocaleString('en-IN');
+        const pct = n => n.toFixed(2) + '%';
+
+        function show(key) {
+            document.getElementById(key + '-empty').style.display = 'none';
+            document.getElementById(key + '-result').classList.add('visible');
+        }
+
+        function donut(id, v1, v2, c1, c2) {
+            const svg = document.getElementById(id); if (!svg) return;
+            const tot = v1 + v2; if (tot <= 0) return;
+            const r = 28, cx = 40, cy = 40, sw = 10, circ = 2 * Math.PI * r, d1 = (v1 / tot) * circ;
+            svg.innerHTML = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${c2}" stroke-width="${sw}" stroke-dasharray="${circ}" transform="rotate(-90 ${cx} ${cy})"/><circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${c1}" stroke-width="${sw}" stroke-dasharray="${d1} ${circ - d1}" transform="rotate(-90 ${cx} ${cy})" stroke-linecap="round"/>`;
+        }
+
+        function sel(k) {
+            document.querySelectorAll('.calc-card').forEach(c => c.classList.remove('active'));
+            document.querySelector(`[data-calc="${k}"]`).classList.add('active');
+            document.querySelectorAll('.calc-panel').forEach(p => p.classList.remove('visible'));
+            document.getElementById('panel-' + k).classList.add('visible');
+        }
+
+        function calcSI() {
+            const p = +document.getElementById('si-p').value, r = +document.getElementById('si-r').value, t = +document.getElementById('si-t').value;
+            if (!p || !r || !t) return;
+            const i = p * r * t / 100, total = p + i;
+            document.getElementById('si-interest').textContent = fmt(i);
+            document.getElementById('si-total').textContent = fmt(total);
+            document.getElementById('si-principal').textContent = fmt(p);
+            document.getElementById('si-monthly').textContent = fmt(i / (t * 12));
+            donut('si-donut', i, p, '#f5a623', '#5b9cf6'); show('si');
+        }
+
+        function calcCI() {
+            const p = +document.getElementById('ci-p').value, r = +document.getElementById('ci-r').value, t = +document.getElementById('ci-t').value, n = +document.getElementById('ci-n').value;
+            if (!p || !r || !t) return;
+            const total = p * Math.pow(1 + (r / 100) / n, n * t), i = total - p;
+            document.getElementById('ci-total').textContent = fmt(total);
+            document.getElementById('ci-interest').textContent = fmt(i);
+            document.getElementById('ci-principal').textContent = fmt(p);
+            document.getElementById('ci-gain').textContent = pct(i / p * 100);
+            donut('ci-donut', i, p, '#f5a623', '#5b9cf6'); show('ci');
+        }
+
+        function calcEMI() {
+            const p = +document.getElementById('emi-p').value, ar = +document.getElementById('emi-r').value, t = +document.getElementById('emi-t').value;
+            if (!p || !ar || !t) return;
+            const r = ar / 100 / 12, n = t * 12, emi = p * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1), total = emi * n, i = total - p;
+            document.getElementById('emi-emi').textContent = fmt(emi);
+            document.getElementById('emi-total').textContent = fmt(total);
+            document.getElementById('emi-interest').textContent = fmt(i);
+            document.getElementById('emi-principal').textContent = fmt(p);
+            donut('emi-donut', i, p, '#e85555', '#5b9cf6'); show('emi');
+        }
+
+        function calcFD() {
+            const p = +document.getElementById('fd-p').value, r = +document.getElementById('fd-r').value, t = +document.getElementById('fd-t').value, n = +document.getElementById('fd-n').value;
+            if (!p || !r || !t) return;
+            const m = p * Math.pow(1 + (r / 100) / n, n * t), i = m - p;
+            document.getElementById('fd-maturity').textContent = fmt(m);
+            document.getElementById('fd-interest').textContent = fmt(i);
+            document.getElementById('fd-principal').textContent = fmt(p);
+            document.getElementById('fd-yield').textContent = pct(i / p * 100);
+            donut('fd-donut', i, p, '#4caf7d', '#5b9cf6'); show('fd');
+        }
+
+        function calcRD() {
+            const m = +document.getElementById('rd-m').value, r = +document.getElementById('rd-r').value, t = +document.getElementById('rd-t').value;
+            if (!m || !r || !t) return;
+            const n = t * 12, mr = r / 100 / 4;
+            let mat = 0; for (let i = 1; i <= n; i++) mat += m * Math.pow(1 + mr, i / 3);
+            const inv = m * n, interest = mat - inv;
+            document.getElementById('rd-maturity').textContent = fmt(mat);
+            document.getElementById('rd-interest').textContent = fmt(interest);
+            document.getElementById('rd-invested').textContent = fmt(inv);
+            document.getElementById('rd-monthly').textContent = fmt(m);
+            donut('rd-donut', interest, inv, '#4caf7d', '#5b9cf6'); show('rd');
+        }
+
+        function calcSIP() {
+            const m = +document.getElementById('sip-m').value, r = +document.getElementById('sip-r').value, t = +document.getElementById('sip-t').value;
+            if (!m || !r || !t) return;
+            const mr = r / 100 / 12, n = t * 12, w = m * ((Math.pow(1 + mr, n) - 1) / mr) * (1 + mr), inv = m * n, ret = w - inv;
+            document.getElementById('sip-wealth').textContent = fmt(w);
+            document.getElementById('sip-returns').textContent = fmt(ret);
+            document.getElementById('sip-invested').textContent = fmt(inv);
+            document.getElementById('sip-mult').textContent = (w / inv).toFixed(2) + 'x';
+            donut('sip-donut', ret, inv, '#4caf7d', '#5b9cf6'); show('sip');
+        }
+
+        function calcSWP() {
+            const c = +document.getElementById('swp-corpus').value, m = +document.getElementById('swp-m').value, r = +document.getElementById('swp-r').value, t = +document.getElementById('swp-t').value;
+            if (!c || !m || !r || !t) return;
+            const mr = r / 100 / 12, n = t * 12; let bal = c;
+            for (let i = 0; i < n; i++) bal = bal * (1 + mr) - m;
+            document.getElementById('swp-total').textContent = fmt(m * n);
+            document.getElementById('swp-remaining').textContent = bal > 0 ? fmt(bal) : '₹0 (Depleted)';
+            document.getElementById('swp-corpus-val').textContent = fmt(c);
+            document.getElementById('swp-monthly').textContent = fmt(m);
+            show('swp');
+        }
+
+        function calcInflation() {
+            const a = +document.getElementById('inf-amount').value, r = +document.getElementById('inf-r').value, t = +document.getElementById('inf-t').value;
+            if (!a || !r || !t) return;
+            const f = a * Math.pow(1 + r / 100, t), loss = f - a, rv = a / Math.pow(1 + r / 100, t), ero = (a - rv) / a * 100;
+            document.getElementById('inf-future').textContent = fmt(f);
+            document.getElementById('inf-loss').textContent = fmt(loss);
+            document.getElementById('inf-current').textContent = fmt(a);
+            document.getElementById('inf-erosion').textContent = pct(ero);
+            donut('inflation-donut', loss, a, '#e85555', '#5b9cf6'); show('inflation');
+        }
+
+        function calcInterest() {
+            const p = +document.getElementById('int-p').value, r = +document.getElementById('int-r').value, t = +document.getElementById('int-t').value;
+            if (!p || !r || !t) return;
+            const si = p * r * t / 100, ciT = p * Math.pow(1 + r / 100, t), ci = ciT - p, diff = ci - si;
+            document.getElementById('int-diff').textContent = fmt(diff);
+            document.getElementById('int-ci').textContent = fmt(ci);
+            document.getElementById('int-si').textContent = fmt(si);
+            document.getElementById('int-ci-total').textContent = fmt(ciT);
+            document.getElementById('int-si-total').textContent = fmt(p + si);
+            show('interest');
+        }
+    </script>
+</body>
+</html>

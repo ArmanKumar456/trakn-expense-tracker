@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Financial News - TRAKN</title>
+<link rel="stylesheet" href="/static/css/styles.css">
+<link rel="icon" type="image/png" href="/static/images/favicon.png">
+<style>
+/* ── NEWS-PAGE ONLY STYLES ── */
+
+/* ── SEARCH BAR ── */
+.search-wrap { flex: 1; max-width: 340px; position: relative; min-width: 200px; }
+.search-wrap svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--text-faint); pointer-events: none; }
+.search-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-family: inherit; font-size: 13.5px; padding: 8px 12px 8px 36px; outline: none; transition: border-color 0.15s, box-shadow 0.15s; }
+.search-input::placeholder { color: var(--text-faint); }
+.search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+
+/* ── CONTENT AREA ── */
+.content-area { padding: 24px 32px 48px; flex: 1; width: 100%; }
+
+/* ── CATEGORY TABS ── */
+.category-row { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.cat-btn { display: flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 20px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); font-family: inherit; font-size: 12.5px; font-weight: 500; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+.cat-btn:hover { border-color: var(--border2); color: var(--text); }
+.cat-btn.active { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 600; }
+.cat-btn .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+/* ── LAYOUT ── */
+.news-layout { display: grid; grid-template-columns: 1fr 300px; gap: 20px; align-items: start; }
+
+/* ── TRENDING BANNER ── */
+.trending-banner { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; overflow: hidden; position: relative; height: 58px; }
+.trending-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--accent); background: var(--accent-dim); padding: 4px 8px; border-radius: 4px; white-space: nowrap; flex-shrink: 0; z-index: 2; align-self: center; }
+.trending-ticker { overflow: hidden; flex: 1; height: 100%; position: relative; z-index: 1; }
+.ticker-inner { display: flex; flex-direction: column; gap: 12px; animation: ticker-vertical 120s linear infinite; padding-top: 0; }
+.ticker-item { white-space: nowrap; font-size: 13px; color: var(--text-muted); cursor: default; line-height: 1.4; flex-shrink: 0; }
+@keyframes ticker-vertical { 0% { transform: translateY(0); } 100% { transform: translateY(-50%); } }
+
+/* ── NEWS GRID ── */
+.news-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+
+/* ── NEWS CARD ── */
+.news-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; display: flex; flex-direction: column; transition: all 0.2s; position: relative; }
+.news-card:hover { border-color: var(--border2); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.25); }
+.news-card.bookmarked { border-color: var(--accent); }
+
+/* ── CARD IMAGE ── */
+/* To add your own image: replace the <div class="card-image-wrap"> with
+   <img class="card-img" src="/static/images/news/YOUR_IMAGE.jpg" alt="article image">
+   The .card-img class will handle sizing automatically. */
+.card-image-wrap { width: 100%; height: 160px; overflow: hidden; background: var(--surface2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; position: relative; }
+.card-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card-emoji-placeholder { font-size: 40px; line-height: 1; }
+.card-cat-overlay { position: absolute; top: 10px; left: 10px; }
+
+.card-body { padding: 14px 16px 16px; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.card-meta { display: flex; align-items: center; justify-content: space-between; }
+.card-cat { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; padding: 3px 8px; border-radius: 4px; }
+.card-date { font-size: 11px; color: var(--text-faint); }
+
+/* Card title: NO click-to-navigate. Cursor is default. */
+.card-title { font-size: 14px; font-weight: 600; line-height: 1.4; color: var(--text); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; cursor: default; }
+
+.card-desc { font-size: 12.5px; color: var(--text-muted); line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; flex: 1; }
+.card-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 10px; border-top: 1px solid var(--border); margin-top: 4px; }
+.card-source { font-size: 11px; color: var(--text-faint); }
+.card-actions { display: flex; align-items: center; gap: 8px; }
+.btn-icon { width: 28px; height: 28px; border-radius: var(--radius-xs); border: 1px solid var(--border); background: transparent; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; font-size: 14px; }
+.btn-icon:hover { border-color: var(--border2); color: var(--text); }
+.btn-icon.bookmarked { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+/* Read button: this is the ONLY way to open an article link */
+.btn-read { font-size: 11.5px; font-weight: 500; color: var(--accent); text-decoration: none; display: flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: var(--radius-xs); border: 1px solid rgba(245,166,35,0.3); transition: all 0.15s; cursor: pointer; }
+.btn-read:hover { background: var(--accent-dim); }
+
+/* ── CATEGORY COLOR CLASSES ── */
+/* Stock Market */
+.cat-sm { background: var(--blue-dim);   color: var(--blue); }
+/* Crypto */
+.cat-cr { background: var(--purple-dim); color: var(--purple); }
+/* Economy */
+.cat-ec { background: var(--red-dim);    color: var(--red); }
+/* Corporate */
+.cat-co { background: rgba(245,166,35,0.12); color: var(--accent); }
+/* Banking */
+.cat-bk { background: var(--green-dim);  color: var(--green); }
+/* Commodity */
+.cat-cm { background: rgba(180,120,60,0.12); color: #b47a3c; }
+/* Forex */
+.cat-fx { background: rgba(90,180,200,0.12); color: #3aabb5; }
+/* Personal Finance */
+.cat-pf { background: var(--green-dim);  color: var(--green); }
+/* Real Estate */
+.cat-re { background: rgba(160,100,200,0.12); color: #a064c8; }
+/* Global */
+.cat-gl { background: var(--blue-dim);   color: var(--blue); }
+
+/* ── RIGHT COLUMN ── */
+.right-col { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 88px; }
+.section-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.section-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.section-title { font-size: 13px; font-weight: 600; }
+.section-badge { font-size: 10px; background: var(--accent-dim); color: var(--accent); padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+.bookmark-item { padding: 12px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; gap: 10px; cursor: pointer; transition: background 0.15s; }
+.bookmark-item:last-child { border-bottom: none; }
+.bookmark-item:hover { background: var(--surface2); }
+.bm-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+.bm-title { font-size: 12.5px; font-weight: 500; line-height: 1.4; color: var(--text); }
+.empty-bm { padding: 24px 18px; text-align: center; color: var(--text-muted); font-size: 12.5px; }
+
+/* ── TOAST ── */
+.toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 18px; font-size: 13px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); z-index: 999; display: flex; align-items: center; gap: 8px; transform: translateY(80px); opacity: 0; transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1); pointer-events: none; }
+.toast.show { transform: none; opacity: 1; }
+.toast-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 1100px) { .news-layout { grid-template-columns: 1fr; } .right-col { position: static; margin-top: 20px; } }
+@media (max-width: 768px) { .content-area { padding: 16px; } .search-wrap { max-width: 100%; order: 3; flex-basis: 100%; } }
+.menu-toggle { display: none; cursor: pointer; padding: 5px; }
+@media (max-width: 768px) { .menu-toggle { display: block; } }
+</style>
+</head>
+<body>
+<div class="app-container">
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo"><span class="fin">TRAK</span><span class="flow">N</span></div>
+    </div>
+    <nav class="sidebar-nav">
+      <span class="nav-section-title">Main</span>
+      <a href="/dashboard.html" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+        Dashboard
+      </a>
+      <a href="/transactions.html" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="7" x2="19" y2="7"></line><line x1="5" y1="11" x2="16" y2="11"></line><path d="M5 7c6 0 7 4 7 6s-2 4-7 4"></path><line x1="10" y1="15" x2="17" y2="21"></line></svg>
+        Transactions
+      </a>
+      <a href="/income.html" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+        Income
+      </a>
+      <a href="/expense.html" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+        Expenses
+      </a>
+      <a href="/budget.html" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>
+        Budgets
+      </a>
+      <a href="/recurring.html" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
+        Recurring
+      </a>
+      <a href="/goals.html" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>
+        Goals
+      </a>
+      <a href="/networth.html" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"></rect><path d="M16 12h4"></path><circle cx="16" cy="12" r="1"></circle></svg>
+        Net Worth
+      </a>
+      <span class="nav-section-title">Insights</span>
+      <a href="/analytics.html" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+        Analytics
+      </a>
+      <a href="/calculator.html" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><circle cx="8" cy="11" r="1"></circle><circle cx="12" cy="11" r="1"></circle><circle cx="16" cy="11" r="1"></circle><circle cx="8" cy="15" r="1"></circle><circle cx="12" cy="15" r="1"></circle><circle cx="16" cy="15" r="1"></circle></svg>
+        Calculator
+      </a>
+      <a href="/news.html" class="nav-item active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"></rect><line x1="7" y1="8" x2="17" y2="8"></line><line x1="7" y1="12" x2="17" y2="12"></line><line x1="7" y1="16" x2="13" y2="16"></line><line x1="4" y1="4" x2="4" y2="20"></line></svg>
+        News
+      </a>
+      <a href="/import.html" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+        Import
+      </a>
+      <a href="/feedback.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z">
+                        </path>
+                    </svg>
+                    Feedback
+                </a>
+      <span class="nav-section-title">Settings</span>
+      <a href="/admin.html" class="nav-item admin-link" style="display:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+        Admin
+      </a>
+      <a href="/profile.html" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        Profile
+      </a>
+      <a href="#" class="nav-item" data-logout>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+        Sign Out
+      </a>
+    </nav>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+    <header class="page-header">
+      <div class="header-left">
+        <div class="menu-toggle" onclick="toggleSidebar()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </div>
+        <div>
+          <h1>Financial News</h1>
+          <p id="liveTime">Loading...</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="search-wrap">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" class="search-input" id="searchInput" placeholder="Search news...">
+        </div>
+        <button class="theme-toggle" data-theme-toggle>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <span>Dark</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="content-area">
+      <!-- Trending Ticker -->
+      <div class="trending-banner">
+        <div class="trending-label">🔥 Trending</div>
+        <div class="trending-ticker"><div class="ticker-inner" id="tickerInner"></div></div>
+      </div>
+
+      <!-- Category Tabs — 10 categories -->
+      <div class="category-row">
+        <button class="cat-btn active" data-cat="all">All News</button>
+        <button class="cat-btn" data-cat="stock-market"><span class="dot" style="background:var(--blue)"></span>Stock Market</button>
+        <button class="cat-btn" data-cat="crypto"><span class="dot" style="background:var(--purple)"></span>Crypto</button>
+        <button class="cat-btn" data-cat="economy"><span class="dot" style="background:var(--red)"></span>Economy</button>
+        <button class="cat-btn" data-cat="corporate"><span class="dot" style="background:var(--accent)"></span>Corporate</button>
+        <button class="cat-btn" data-cat="banking"><span class="dot" style="background:var(--green)"></span>Banking</button>
+        <button class="cat-btn" data-cat="commodity"><span class="dot" style="background:#b47a3c"></span>Commodity</button>
+        <button class="cat-btn" data-cat="forex"><span class="dot" style="background:#3aabb5"></span>Forex</button>
+        <button class="cat-btn" data-cat="personal-finance"><span class="dot" style="background:var(--green)"></span>Personal Finance</button>
+        <button class="cat-btn" data-cat="real-estate"><span class="dot" style="background:#a064c8"></span>Real Estate</button>
+        <button class="cat-btn" data-cat="global"><span class="dot" style="background:var(--blue)"></span>Global</button>
+      </div>
+
+      <!-- News Layout -->
+      <div class="news-layout">
+        <div>
+          <div class="news-grid" id="newsGrid"></div>
+        </div>
+        <div class="right-col">
+          <div class="section-card">
+            <div class="section-header">
+              <span class="section-title">📌 Bookmarks</span>
+              <span class="section-badge" id="bmCount">0</span>
+            </div>
+            <div id="bookmarkList"><div class="empty-bm">No saved articles yet.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"><div class="toast-dot"></div><span id="toastMsg"></span></div>
+
+<script src="/static/js/app.js"></script>
+<script>
+
+// ─────────────────────────────────────────────
+// ADMIN CHECK
+// ─────────────────────────────────────────────
+const isAdmin = localStorage.getItem('trakn-is-admin') === 'true';
+if (isAdmin) document.querySelector('.admin-link').style.display = 'flex';
+
+// ─────────────────────────────────────────────
+// CATEGORY DEFINITIONS
+// ─────────────────────────────────────────────
+const CATS = {
+  'stock-market':    { label:'Stock Market',     cls:'cat-sm', emoji:'📈' },
+  'crypto':          { label:'Crypto',           cls:'cat-cr', emoji:'🪙' },
+  'economy':         { label:'Economy',          cls:'cat-ec', emoji:'🏛️' },
+  'corporate':       { label:'Corporate',        cls:'cat-co', emoji:'🏢' },
+  'banking':         { label:'Banking & Fintech',cls:'cat-bk', emoji:'🏦' },
+  'commodity':       { label:'Commodity',        cls:'cat-cm', emoji:'🪨' },
+  'forex':           { label:'Forex',            cls:'cat-fx', emoji:'💱' },
+  'personal-finance':{ label:'Personal Finance', cls:'cat-pf', emoji:'💰' },
+  'real-estate':     { label:'Real Estate',      cls:'cat-re', emoji:'🏠' },
+  'global':          { label:'Global Finance',   cls:'cat-gl', emoji:'🌐' },
+};
+
+// ─────────────────────────────────────────────
+// NEWS DATA
+// HOW TO ADD MORE ARTICLES:
+// 1. Copy any article object below and paste it at the END of the same category block.
+// 2. Increment the id (keep it unique across ALL articles).
+// 3. Fill in: title, description, source, date, emoji, url, imgSrc.
+//    - imgSrc: put the path to your image e.g. '/static/images/news/your-image.jpg'
+//              Leave as null if you have no image yet — the emoji placeholder shows instead.
+//    - url: paste the real article URL, or use the google search fallback already there.
+// 4. Save the file. That's it!
+// ─────────────────────────────────────────────
+const NEWS = [
+
+  // ── 1. STOCK MARKET ──────────────────────────────────────────────────────
+  // To add more Stock Market news: copy a block below and paste after id:10, increment id.
+  {
+    id:1, category:'stock-market',
+    title:'Sensex Surges 800 Points to Hit Fresh All-Time High',
+    description:'Indian benchmark indices rallied sharply on strong FII buying and positive global cues. Sensex crossed the 80,000 mark intraday, driven by banking and IT heavyweights.',
+    source:'Moneycontrol', date: daysAgo(0, 2),
+    emoji:'📈', imgSrc: null, // replace null with '/static/images/news/sensex-surge.jpg'
+    url:'https://www.google.com/search?q=Sensex+Surges+800+Points+All-Time+High+Moneycontrol'
+  },
+  {
+    id:2, category:'stock-market',
+    title:'RBI Maintains Status Quo on Repo Rate at 6.5%',
+    description:'The Reserve Bank of India kept the benchmark interest rate unchanged for the fifth consecutive time, citing concerns about inflation remaining above the 4% target.',
+    source:'Economic Times', date: daysAgo(0, 5),
+    emoji:'🏦', imgSrc: null, // replace null with '/static/images/news/rbi-rate.jpg'
+    url:'https://www.google.com/search?q=RBI+Maintains+Repo+Rate+6.5+Economic+Times'
+  },
+  {
+    id:3, category:'stock-market',
+    title:'Nifty 50 Nears 25,000 — What Analysts Are Saying',
+    description:'Technical analysts see strong support at 24,500 with resistance at 25,200. Broader markets are showing strength with mid-cap and small-cap indices outperforming.',
+    source:'NDTV Profit', date: daysAgo(1),
+    emoji:'📊', imgSrc: null,
+    url:'https://www.google.com/search?q=Nifty+50+25000+Analysts+NDTV+Profit'
+  },
+  {
+    id:4, category:'stock-market',
+    title:'Reliance Industries Q4 Net Profit Jumps 12% YoY',
+    description:'Reliance Industries reported robust quarterly results driven by strong retail and telecom segments. Jio Platforms added 8 million subscribers in the quarter.',
+    source:'Zee Business', date: daysAgo(1),
+    emoji:'🏭', imgSrc: null,
+    url:'https://www.google.com/search?q=Reliance+Industries+Q4+Net+Profit+Zee+Business'
+  },
+  {
+    id:5, category:'stock-market',
+    title:'TCS Bags ₹15,000 Crore IT Deal from European Bank',
+    description:'Tata Consultancy Services announced a mega deal with a leading European financial institution for digital transformation services, boosting its deal pipeline significantly.',
+    source:'Business Standard', date: daysAgo(2),
+    emoji:'💻', imgSrc: null,
+    url:'https://www.google.com/search?q=TCS+15000+crore+IT+deal+European+Bank+Business+Standard'
+  },
+  {
+    id:6, category:'stock-market',
+    title:'IPO Watch: Three New Issues Open This Week',
+    description:'Three companies — a logistics firm, an EV startup, and an NBFC — have opened their IPOs this week collectively raising over ₹3,500 crore from the primary market.',
+    source:'LiveMint', date: daysAgo(2),
+    emoji:'🚀', imgSrc: null,
+    url:'https://www.google.com/search?q=IPO+Watch+Three+new+issues+week+LiveMint'
+  },
+  {
+    id:7, category:'stock-market',
+    title:'FIIs Turn Net Buyers, Pour ₹12,000 Crore in Equities',
+    description:'Foreign institutional investors became net buyers in the Indian equity market after three months of selling, attracted by attractive valuations and India\'s growth story.',
+    source:'Financial Express', date: daysAgo(3),
+    emoji:'💵', imgSrc: null,
+    url:'https://www.google.com/search?q=FII+Net+Buyers+12000+crore+Equities+Financial+Express'
+  },
+  {
+    id:8, category:'stock-market',
+    title:'HDFC Bank Posts Record Quarterly Profits',
+    description:'HDFC Bank reported its highest-ever quarterly net profit, aided by healthy loan growth of 16% and improvement in asset quality with gross NPA falling to 1.24%.',
+    source:'Economic Times', date: daysAgo(4),
+    emoji:'🏛️', imgSrc: null,
+    url:'https://www.google.com/search?q=HDFC+Bank+Record+Quarterly+Profits+Economic+Times'
+  },
+  {
+    id:9, category:'stock-market',
+    title:'Auto Sector Rally: Maruti, Tata Motors Hit 52-Week Highs',
+    description:'Automobile stocks surged on the back of strong sales data for the festive season. Maruti Suzuki and Tata Motors both touched fresh 52-week highs in intraday trade.',
+    source:'Moneycontrol', date: daysAgo(5),
+    emoji:'🚗', imgSrc: null,
+    url:'https://www.google.com/search?q=Auto+Sector+Rally+Maruti+Tata+Motors+52+Week+High+Moneycontrol'
+  },
+  {
+    id:10, category:'stock-market',
+    title:'SEBI Proposes New F&O Rules to Curb Retail Speculation',
+    description:'The Securities and Exchange Board of India has proposed stricter norms for futures and options trading, including higher contract sizes and mandatory disclosures, to protect retail investors.',
+    source:'Business Standard', date: daysAgo(6),
+    emoji:'⚖️', imgSrc: null,
+    url:'https://www.google.com/search?q=SEBI+FnO+Rules+Retail+Speculation+Business+Standard'
+  },
+
+  // ── 2. CRYPTO ─────────────────────────────────────────────────────────────
+  // To add more Crypto news: copy a block below and paste after id:20, increment id.
+  {
+    id:11, category:'crypto',
+    title:'Bitcoin Crosses $70,000 as ETF Inflows Hit Record',
+    description:'Bitcoin surged past $70,000 on the back of massive inflows into spot Bitcoin ETFs in the US. Institutional demand is driving the rally amid limited supply after the halving.',
+    source:'CoinDesk', date: daysAgo(0, 3),
+    emoji:'₿', imgSrc: null,
+    url:'https://www.google.com/search?q=Bitcoin+70000+ETF+Inflows+Record+CoinDesk'
+  },
+  {
+    id:12, category:'crypto',
+    title:'Ethereum Layer-2 Networks See 300% Transaction Surge',
+    description:'Ethereum\'s Layer-2 scaling solutions — including Arbitrum and Optimism — have seen unprecedented growth in transactions, reducing gas fees and improving user experience.',
+    source:'Decrypt', date: daysAgo(1),
+    emoji:'⚡', imgSrc: null,
+    url:'https://www.google.com/search?q=Ethereum+Layer2+Transaction+Surge+Decrypt'
+  },
+  {
+    id:13, category:'crypto',
+    title:'SEBI Cracks Down on Illegal Offshore Crypto Exchanges',
+    description:'The market regulator issued show-cause notices to several offshore crypto exchanges operating without registration in India, intensifying regulatory scrutiny on the sector.',
+    source:'Financial Express', date: daysAgo(1),
+    emoji:'🛡️', imgSrc: null,
+    url:'https://www.google.com/search?q=SEBI+Cracks+Down+Offshore+Crypto+Exchanges+Financial+Express'
+  },
+  {
+    id:14, category:'crypto',
+    title:'India\'s WazirX Resumes Withdrawals After Security Audit',
+    description:'Cryptocurrency exchange WazirX announced the resumption of partial withdrawals following a comprehensive security audit after last year\'s major hack that compromised user funds.',
+    source:'CoinTelegraph', date: daysAgo(2),
+    emoji:'🔓', imgSrc: null,
+    url:'https://www.google.com/search?q=WazirX+Resumes+Withdrawals+Security+Audit+CoinTelegraph'
+  },
+  {
+    id:15, category:'crypto',
+    title:'Solana Hits All-Time High; Developers Flock to Ecosystem',
+    description:'SOL token reached its highest ever price as the Solana ecosystem witnessed an explosion in DeFi and NFT activity, with over 400 new projects launching in the last quarter.',
+    source:'CoinDesk', date: daysAgo(2),
+    emoji:'🌟', imgSrc: null,
+    url:'https://www.google.com/search?q=Solana+All-Time+High+Developers+Ecosystem+CoinDesk'
+  },
+  {
+    id:16, category:'crypto',
+    title:'RBI Working Paper Examines CBDC Retail Pilot Results',
+    description:'The Reserve Bank of India released a detailed working paper on its e-Rupee pilot, reporting 1.3 million transactions but noting challenges in merchant adoption and user awareness.',
+    source:'Economic Times', date: daysAgo(3),
+    emoji:'🇮🇳', imgSrc: null,
+    url:'https://www.google.com/search?q=RBI+CBDC+eRupee+Retail+Pilot+Results+Economic+Times'
+  },
+  {
+    id:17, category:'crypto',
+    title:'DeFi Protocol Hacked; $120 Million Lost in Exploit',
+    description:'A major decentralized finance protocol suffered a smart contract exploit resulting in the loss of $120 million in user funds, raising fresh concerns about DeFi security standards.',
+    source:'The Block', date: daysAgo(3),
+    emoji:'🚨', imgSrc: null,
+    url:'https://www.google.com/search?q=DeFi+Protocol+Hacked+120+Million+Exploit+The+Block'
+  },
+  {
+    id:18, category:'crypto',
+    title:'Polygon Partners with Major Indian Bank for Blockchain Bonds',
+    description:'Polygon Labs announced a partnership with a leading Indian public sector bank to issue digital bonds on its blockchain, marking a significant step for institutional blockchain adoption in India.',
+    source:'Inc42', date: daysAgo(4),
+    emoji:'🔗', imgSrc: null,
+    url:'https://www.google.com/search?q=Polygon+Indian+Bank+Blockchain+Bonds+Inc42'
+  },
+  {
+    id:19, category:'crypto',
+    title:'Crypto Tax Compliance in India: IT Department Sends Notices',
+    description:'The Income Tax department has begun sending compliance notices to high-value cryptocurrency traders who failed to declare gains in their returns, as crypto reporting becomes mandatory.',
+    source:'LiveMint', date: daysAgo(5),
+    emoji:'📋', imgSrc: null,
+    url:'https://www.google.com/search?q=Crypto+Tax+Compliance+India+IT+Department+Notices+LiveMint'
+  },
+  {
+    id:20, category:'crypto',
+    title:'Web3 Gaming Sector Raises $500M in Q1 Funding',
+    description:'The blockchain gaming and Web3 entertainment sector attracted over $500 million in venture capital funding in the first quarter, signaling renewed investor confidence despite bear market hangover.',
+    source:'Decrypt', date: daysAgo(6),
+    emoji:'🎮', imgSrc: null,
+    url:'https://www.google.com/search?q=Web3+Gaming+500M+Funding+Q1+Decrypt'
+  },
+
+  // ── 3. ECONOMY ────────────────────────────────────────────────────────────
+  // To add more Economy news: copy a block below and paste after id:30, increment id.
+  {
+    id:21, category:'economy',
+    title:'India\'s GDP Growth Forecast Raised to 7.2% by IMF',
+    description:'The International Monetary Fund revised India\'s growth projection upwards, citing strong domestic consumption, robust services exports, and government capital expenditure as key drivers.',
+    source:'Business Standard', date: daysAgo(0, 4),
+    emoji:'🇮🇳', imgSrc: null,
+    url:'https://www.google.com/search?q=India+GDP+Growth+7.2+IMF+Business+Standard'
+  },
+  {
+    id:22, category:'economy',
+    title:'CPI Inflation Eases to 4.85%, Vegetable Prices Cool',
+    description:'Consumer Price Index inflation moderated to 4.85% in the latest reading as vegetable prices came off their highs. Core inflation remained sticky around 3.7%, keeping the RBI watchful.',
+    source:'Economic Times', date: daysAgo(1),
+    emoji:'📉', imgSrc: null,
+    url:'https://www.google.com/search?q=CPI+Inflation+4.85+Vegetable+Prices+Economic+Times'
+  },
+  {
+    id:23, category:'economy',
+    title:'Union Budget 2025: Key Highlights for the Middle Class',
+    description:'Finance Minister announced income tax relief for the middle class, increased standard deduction, and higher capital expenditure of ₹11.11 lakh crore for infrastructure development.',
+    source:'NDTV Profit', date: daysAgo(2),
+    emoji:'📜', imgSrc: null,
+    url:'https://www.google.com/search?q=Union+Budget+2025+Key+Highlights+Middle+Class+NDTV'
+  },
+  {
+    id:24, category:'economy',
+    title:'India\'s Unemployment Rate Falls to 7.8%, Manufacturing Gains',
+    description:'The latest Periodic Labour Force Survey data shows unemployment falling to 7.8% as manufacturing and construction sectors absorbed a significant number of workers over the past year.',
+    source:'LiveMint', date: daysAgo(2),
+    emoji:'👷', imgSrc: null,
+    url:'https://www.google.com/search?q=India+Unemployment+Rate+7.8+Manufacturing+LiveMint'
+  },
+  {
+    id:25, category:'economy',
+    title:'India\'s Exports Cross $800 Billion for First Time',
+    description:'India\'s total merchandise and services exports crossed the $800 billion milestone for the first time in a financial year, driven by strong software services, gems, jewellery, and pharmaceuticals.',
+    source:'Moneycontrol', date: daysAgo(3),
+    emoji:'📦', imgSrc: null,
+    url:'https://www.google.com/search?q=India+Exports+800+Billion+First+Time+Moneycontrol'
+  },
+  {
+    id:26, category:'economy',
+    title:'RBI Increases Forex Reserves to Record $670 Billion',
+    description:'India\'s foreign exchange reserves surged to an all-time high of $670 billion, providing a comfortable cushion of over 12 months of import cover and strengthening macroeconomic stability.',
+    source:'Financial Express', date: daysAgo(3),
+    emoji:'💰', imgSrc: null,
+    url:'https://www.google.com/search?q=RBI+Forex+Reserves+670+Billion+Record+Financial+Express'
+  },
+  {
+    id:27, category:'economy',
+    title:'GST Collections Surpass ₹2 Lakh Crore for Third Straight Month',
+    description:'Gross GST collections exceeded ₹2 lakh crore for the third consecutive month, reflecting robust economic activity, improved compliance, and the government\'s strong anti-evasion measures.',
+    source:'Business Standard', date: daysAgo(4),
+    emoji:'🏛️', imgSrc: null,
+    url:'https://www.google.com/search?q=GST+Collections+2+Lakh+Crore+Third+Month+Business+Standard'
+  },
+  {
+    id:28, category:'economy',
+    title:'PLI Scheme Attracts ₹1.2 Lakh Crore in Investments',
+    description:'The Production Linked Incentive scheme across 14 sectors has attracted investments worth ₹1.2 lakh crore and generated employment for over 8.5 lakh people, the government reported.',
+    source:'Economic Times', date: daysAgo(5),
+    emoji:'🏗️', imgSrc: null,
+    url:'https://www.google.com/search?q=PLI+Scheme+1.2+Lakh+Crore+Investments+Economic+Times'
+  },
+  {
+    id:29, category:'economy',
+    title:'India Signs Free Trade Agreement with UK After 3 Years',
+    description:'India and the United Kingdom concluded a landmark Free Trade Agreement after three years of negotiations, expected to boost bilateral trade by $26 billion annually and benefit IT and textile sectors.',
+    source:'The Hindu BusinessLine', date: daysAgo(5),
+    emoji:'🤝', imgSrc: null,
+    url:'https://www.google.com/search?q=India+UK+Free+Trade+Agreement+FTA+BusinessLine'
+  },
+  {
+    id:30, category:'economy',
+    title:'RBI Monetary Policy: Rate Cut on the Horizon by December?',
+    description:'Analysts believe the RBI could begin its rate-cutting cycle by December if inflation continues to moderate, which would provide relief to borrowers and stimulate consumer spending.',
+    source:'LiveMint', date: daysAgo(6),
+    emoji:'📅', imgSrc: null,
+    url:'https://www.google.com/search?q=RBI+Monetary+Policy+Rate+Cut+December+LiveMint'
+  },
+
+  // ── 4. CORPORATE ──────────────────────────────────────────────────────────
+  // To add more Corporate news: copy a block below and paste after id:40, increment id.
+  {
+    id:31, category:'corporate',
+    title:'Adani Group Announces ₹2 Lakh Crore Capex Plan for 5 Years',
+    description:'The Adani Group unveiled a massive ₹2 lakh crore capital expenditure plan across its ports, airports, energy, and data centre businesses over the next five years.',
+    source:'Economic Times', date: daysAgo(0, 6),
+    emoji:'🏗️', imgSrc: null,
+    url:'https://www.google.com/search?q=Adani+Group+2+Lakh+Crore+Capex+Plan+Economic+Times'
+  },
+  {
+    id:32, category:'corporate',
+    title:'Infosys CEO Salil Parekh Gets 3-Year Contract Extension',
+    description:'Infosys board approved the extension of CEO Salil Parekh\'s contract for another three years, citing his strong leadership in navigating macroeconomic headwinds and winning large deals.',
+    source:'Business Standard', date: daysAgo(1),
+    emoji:'👔', imgSrc: null,
+    url:'https://www.google.com/search?q=Infosys+CEO+Salil+Parekh+Contract+Extension+Business+Standard'
+  },
+  {
+    id:33, category:'corporate',
+    title:'Tata Group to Acquire Major Stake in Air India MRO Business',
+    description:'Tata Sons is in advanced discussions to acquire a controlling stake in Air India\'s maintenance, repair and overhaul business as part of its broader aviation turnaround strategy.',
+    source:'Moneycontrol', date: daysAgo(1),
+    emoji:'✈️', imgSrc: null,
+    url:'https://www.google.com/search?q=Tata+Group+Air+India+MRO+Stake+Moneycontrol'
+  },
+  {
+    id:34, category:'corporate',
+    title:'Zomato-Blinkit Merger Creates India\'s Largest Quick Commerce Entity',
+    description:'The integration of Blinkit into Zomato\'s corporate structure is now complete, creating India\'s dominant quick commerce and food delivery conglomerate with a combined GMV of ₹35,000 crore.',
+    source:'Inc42', date: daysAgo(2),
+    emoji:'🛒', imgSrc: null,
+    url:'https://www.google.com/search?q=Zomato+Blinkit+Merger+India+Quick+Commerce+Inc42'
+  },
+  {
+    id:35, category:'corporate',
+    title:'Wipro to Lay Off 3,000 Employees Amid AI Restructuring',
+    description:'IT major Wipro announced plans to reduce its workforce by approximately 3,000 positions as it restructures operations to focus on AI-led service delivery and higher-margin engagements.',
+    source:'NDTV Profit', date: daysAgo(2),
+    emoji:'🔄', imgSrc: null,
+    url:'https://www.google.com/search?q=Wipro+Lay+Off+3000+AI+Restructuring+NDTV+Profit'
+  },
+  {
+    id:36, category:'corporate',
+    title:'Flipkart Files for US IPO; Valuation Seen at $40 Billion',
+    description:'Walmart-backed Flipkart has reportedly filed confidentially for a US IPO, with early estimates placing the company\'s valuation between $35-40 billion in what would be a landmark listing.',
+    source:'Economic Times', date: daysAgo(3),
+    emoji:'🛍️', imgSrc: null,
+    url:'https://www.google.com/search?q=Flipkart+US+IPO+Valuation+40+Billion+Economic+Times'
+  },
+  {
+    id:37, category:'corporate',
+    title:'JSW Steel and POSCO Sign Joint Venture for Green Steel',
+    description:'JSW Steel and South Korean steelmaker POSCO announced a ₹60,000 crore joint venture to produce green hydrogen-based steel in India, targeting carbon-neutral production by 2035.',
+    source:'Business Standard', date: daysAgo(3),
+    emoji:'♻️', imgSrc: null,
+    url:'https://www.google.com/search?q=JSW+Steel+POSCO+Joint+Venture+Green+Steel+Business+Standard'
+  },
+  {
+    id:38, category:'corporate',
+    title:'Ola Electric Faces Quality Complaints, CCPA Issues Notice',
+    description:'The Central Consumer Protection Authority issued a notice to Ola Electric after thousands of consumers filed complaints about product defects, after-sales service failures, and delayed deliveries.',
+    source:'LiveMint', date: daysAgo(4),
+    emoji:'🛵', imgSrc: null,
+    url:'https://www.google.com/search?q=Ola+Electric+Quality+Complaints+CCPA+Notice+LiveMint'
+  },
+  {
+    id:39, category:'corporate',
+    title:'Mukesh Ambani Launches JioAGI Platform for Indian Enterprises',
+    description:'Reliance Industries launched JioAGI, an enterprise-grade artificial general intelligence platform designed for Indian businesses, available in 22 languages and integrated with existing Jio infrastructure.',
+    source:'Zee Business', date: daysAgo(5),
+    emoji:'🤖', imgSrc: null,
+    url:'https://www.google.com/search?q=Mukesh+Ambani+JioAGI+Platform+Indian+Enterprises+Zee+Business'
+  },
+  {
+    id:40, category:'corporate',
+    title:'Mahindra & Mahindra Enters EV Truck Segment with BE.TEG',
+    description:'Mahindra unveiled its BE.TEG electric truck concept, signaling the company\'s entry into the electric commercial vehicle segment as part of its goal to electrify 30% of its portfolio by 2027.',
+    source:'Financial Express', date: daysAgo(6),
+    emoji:'🚛', imgSrc: null,
+    url:'https://www.google.com/search?q=Mahindra+EV+Truck+BE.TEG+Electric+Commercial+Financial+Express'
+  },
+
+  // ── 5. BANKING & FINTECH ──────────────────────────────────────────────────
+  // To add more Banking news: copy a block below and paste after id:50, increment id.
+  {
+    id:41, category:'banking',
+    title:'SBI Launches Zero-Fee UPI for Small Merchants',
+    description:'State Bank of India introduced a zero-fee UPI transaction policy for merchants with annual turnover below ₹40 lakh, aiming to accelerate digital payment adoption in Tier 2 and 3 cities.',
+    source:'LiveMint', date: daysAgo(0, 3),
+    emoji:'📱', imgSrc: null,
+    url:'https://www.google.com/search?q=SBI+Zero+Fee+UPI+Small+Merchants+LiveMint'
+  },
+  {
+    id:42, category:'banking',
+    title:'RBI Grants Full Banking Licence to Two New Small Finance Banks',
+    description:'The Reserve Bank of India issued in-principle approval for two new small finance banks, including one focused on the northeastern states and another targeting the MSME sector.',
+    source:'Economic Times', date: daysAgo(1),
+    emoji:'🏦', imgSrc: null,
+    url:'https://www.google.com/search?q=RBI+Banking+Licence+Small+Finance+Banks+Economic+Times'
+  },
+  {
+    id:43, category:'banking',
+    title:'UPI Transactions Cross 15 Billion in a Single Month',
+    description:'India\'s Unified Payments Interface recorded over 15 billion transactions in a single month for the first time, cementing its position as the world\'s most used real-time payment system.',
+    source:'Business Standard', date: daysAgo(1),
+    emoji:'💳', imgSrc: null,
+    url:'https://www.google.com/search?q=UPI+Transactions+15+Billion+Single+Month+Business+Standard'
+  },
+  {
+    id:44, category:'banking',
+    title:'Paytm Payments Bank Gets Partial Restoration of Services',
+    description:'Following regulatory restrictions, Paytm Payments Bank received partial approval from the RBI to resume onboarding new customers after demonstrating compliance with KYC and AML norms.',
+    source:'Moneycontrol', date: daysAgo(2),
+    emoji:'🔄', imgSrc: null,
+    url:'https://www.google.com/search?q=Paytm+Payments+Bank+Partial+Restoration+Services+Moneycontrol'
+  },
+  {
+    id:45, category:'banking',
+    title:'ICICI Bank Introduces AI-Powered Fraud Detection System',
+    description:'ICICI Bank rolled out an AI-driven fraud detection engine that analyzes over 400 data points per transaction in real-time, reducing fraudulent transactions by 60% in the pilot phase.',
+    source:'Financial Express', date: daysAgo(2),
+    emoji:'🛡️', imgSrc: null,
+    url:'https://www.google.com/search?q=ICICI+Bank+AI+Fraud+Detection+System+Financial+Express'
+  },
+  {
+    id:46, category:'banking',
+    title:'Kotak Mahindra Bank Merges with Its NBFC Arm',
+    description:'Kotak Mahindra Bank completed the merger of Kotak Mahindra Prime with itself, simplifying the group structure and consolidating the vehicle finance and personal loan portfolio.',
+    source:'Economic Times', date: daysAgo(3),
+    emoji:'🔀', imgSrc: null,
+    url:'https://www.google.com/search?q=Kotak+Mahindra+Bank+NBFC+Merger+Economic+Times'
+  },
+  {
+    id:47, category:'banking',
+    title:'Credit Card Outstanding Balances Hit ₹2.7 Lakh Crore',
+    description:'Outstanding credit card dues in India reached ₹2.7 lakh crore as consumers increasingly use revolving credit, prompting the RBI to issue guidelines on responsible lending practices.',
+    source:'NDTV Profit', date: daysAgo(4),
+    emoji:'💳', imgSrc: null,
+    url:'https://www.google.com/search?q=Credit+Card+Outstanding+Balances+2.7+Lakh+Crore+NDTV'
+  },
+  {
+    id:48, category:'banking',
+    title:'Navi Finserv\'s IPO: India\'s Biggest Fintech Listing Planned',
+    description:'Sachin Bansal\'s Navi Finserv filed DRHP with SEBI for a ₹3,500 crore IPO, which would be one of the largest fintech listings in India\'s history if approved.',
+    source:'Inc42', date: daysAgo(4),
+    emoji:'🚀', imgSrc: null,
+    url:'https://www.google.com/search?q=Navi+Finserv+IPO+India+Biggest+Fintech+Listing+Inc42'
+  },
+  {
+    id:49, category:'banking',
+    title:'Yes Bank Completes Turnaround; Returns to Profitability',
+    description:'Yes Bank reported its strongest quarterly performance since its restructuring, with net profit crossing ₹500 crore and gross NPA improving to below 2%, signaling a successful recovery.',
+    source:'Zee Business', date: daysAgo(5),
+    emoji:'🏆', imgSrc: null,
+    url:'https://www.google.com/search?q=Yes+Bank+Turnaround+Profitability+Zee+Business'
+  },
+  {
+    id:50, category:'banking',
+    title:'Account Aggregator Network Reaches 50 Million Users',
+    description:'India\'s Account Aggregator framework — which enables seamless financial data sharing with user consent — crossed 50 million registered users, opening up a new era of open banking in India.',
+    source:'LiveMint', date: daysAgo(6),
+    emoji:'🔗', imgSrc: null,
+    url:'https://www.google.com/search?q=Account+Aggregator+Network+50+Million+Users+LiveMint'
+  },
+
+  // ── 6. COMMODITY ──────────────────────────────────────────────────────────
+  // To add more Commodity news: copy a block below and paste after id:60, increment id.
+  {
+    id:51, category:'commodity',
+    title:'Gold Hits ₹75,000 per 10 Gram on Safe Haven Demand',
+    description:'Gold prices in India touched ₹75,000 per 10 grams for the first time ever, driven by global geopolitical tensions, central bank buying, and a weakening US dollar.',
+    source:'Economic Times', date: daysAgo(0, 2),
+    emoji:'🥇', imgSrc: null,
+    url:'https://www.google.com/search?q=Gold+75000+10+Gram+Safe+Haven+Demand+Economic+Times'
+  },
+  {
+    id:52, category:'commodity',
+    title:'Crude Oil Slips Below $80 on Rising US Inventories',
+    description:'Brent crude oil fell below $80 per barrel after US Energy Information Administration data showed a surprise build in crude inventories, easing concerns about a supply deficit.',
+    source:'Business Standard', date: daysAgo(1),
+    emoji:'🛢️', imgSrc: null,
+    url:'https://www.google.com/search?q=Crude+Oil+Below+80+US+Inventories+Business+Standard'
+  },
+  {
+    id:53, category:'commodity',
+    title:'Silver Outperforms Gold; Industrial Demand Surges',
+    description:'Silver prices rallied 18% year-to-date, outperforming gold, driven by soaring demand from the solar panel and electric vehicle industries that rely heavily on silver as an industrial metal.',
+    source:'Moneycontrol', date: daysAgo(1),
+    emoji:'🪙', imgSrc: null,
+    url:'https://www.google.com/search?q=Silver+Outperforms+Gold+Industrial+Demand+Surges+Moneycontrol'
+  },
+  {
+    id:54, category:'commodity',
+    title:'Wheat Prices Spike 12% on Drought Concerns in India',
+    description:'Domestic wheat futures surged 12% following reports of below-normal rabi crop output due to untimely heat waves in key wheat-producing states of Punjab and Haryana.',
+    source:'Financial Express', date: daysAgo(2),
+    emoji:'🌾', imgSrc: null,
+    url:'https://www.google.com/search?q=Wheat+Prices+Spike+Drought+India+Financial+Express'
+  },
+  {
+    id:55, category:'commodity',
+    title:'Natural Gas Prices Collapse 40% on Mild Winter',
+    description:'Global natural gas prices fell 40% from their peak as a warmer-than-expected winter across Europe and North America reduced heating demand, leading to record-high storage levels.',
+    source:'LiveMint', date: daysAgo(2),
+    emoji:'🔥', imgSrc: null,
+    url:'https://www.google.com/search?q=Natural+Gas+Prices+Collapse+Mild+Winter+LiveMint'
+  },
+  {
+    id:56, category:'commodity',
+    title:'India Increases Strategic Petroleum Reserve Capacity',
+    description:'The government approved expansion of India\'s strategic petroleum reserve to 15 days of import cover, adding new underground storage facilities in Karnataka and Rajasthan.',
+    source:'Economic Times', date: daysAgo(3),
+    emoji:'⛽', imgSrc: null,
+    url:'https://www.google.com/search?q=India+Strategic+Petroleum+Reserve+Capacity+Economic+Times'
+  },
+  {
+    id:57, category:'commodity',
+    title:'Palladium Hits 2-Year Low as EVs Replace Catalytic Converters',
+    description:'Palladium prices hit their lowest level in two years as the rapid adoption of electric vehicles globally reduces demand for catalytic converters, where palladium is a key component.',
+    source:'Business Standard', date: daysAgo(3),
+    emoji:'📉', imgSrc: null,
+    url:'https://www.google.com/search?q=Palladium+2+Year+Low+EVs+Catalytic+Converters+Business+Standard'
+  },
+  {
+    id:58, category:'commodity',
+    title:'MCX Launches New Agri Futures Contracts for Pulses',
+    description:'The Multi Commodity Exchange of India launched new futures contracts for tur dal and chana, giving farmers and traders better price discovery tools for India\'s vital pulse commodities.',
+    source:'NDTV Profit', date: daysAgo(4),
+    emoji:'🫘', imgSrc: null,
+    url:'https://www.google.com/search?q=MCX+Agri+Futures+Contracts+Pulses+NDTV+Profit'
+  },
+  {
+    id:59, category:'commodity',
+    title:'OPEC+ Extends Production Cuts Through Q3 2025',
+    description:'The OPEC+ alliance agreed to extend existing oil production cuts of 3.66 million barrels per day through the third quarter of 2025 in an effort to support prices and balance global supply.',
+    source:'Financial Express', date: daysAgo(5),
+    emoji:'🌍', imgSrc: null,
+    url:'https://www.google.com/search?q=OPEC+Production+Cuts+Q3+2025+Financial+Express'
+  },
+  {
+    id:60, category:'commodity',
+    title:'Cotton Prices Recover as India Restricts Export',
+    description:'Domestic cotton prices recovered sharply after the government imposed an export restriction to ensure adequate supply for the textile industry and keep prices in check for farmers.',
+    source:'Moneycontrol', date: daysAgo(6),
+    emoji:'🌿', imgSrc: null,
+    url:'https://www.google.com/search?q=Cotton+Prices+Recover+India+Restricts+Export+Moneycontrol'
+  },
+
+  // ── 7. FOREX ──────────────────────────────────────────────────────────────
+  // To add more Forex news: copy a block below and paste after id:70, increment id.
+  {
+    id:61, category:'forex',
+    title:'Rupee Strengthens to 83.10 Against Dollar',
+    description:'The Indian rupee appreciated to 83.10 against the US dollar, its strongest level in six months, supported by sustained FII inflows, robust forex reserves, and a weak dollar index.',
+    source:'Business Standard', date: daysAgo(0, 1),
+    emoji:'💱', imgSrc: null,
+    url:'https://www.google.com/search?q=Rupee+Strengthens+83.10+Dollar+Business+Standard'
+  },
+  {
+    id:62, category:'forex',
+    title:'Dollar Index Drops to 7-Month Low on Fed Pivot Hopes',
+    description:'The US Dollar Index fell to its lowest level in seven months after Federal Reserve minutes revealed growing consensus among members for rate cuts beginning in the first half of the year.',
+    source:'Economic Times', date: daysAgo(1),
+    emoji:'📉', imgSrc: null,
+    url:'https://www.google.com/search?q=Dollar+Index+7+Month+Low+Fed+Pivot+Economic+Times'
+  },
+  {
+    id:63, category:'forex',
+    title:'EUR/USD Climbs as ECB Signals Steady Rates',
+    description:'The Euro gained against the dollar after European Central Bank president signaled that the ECB would maintain its current rate stance until inflation durably returns to the 2% target.',
+    source:'LiveMint', date: daysAgo(1),
+    emoji:'🇪🇺', imgSrc: null,
+    url:'https://www.google.com/search?q=EUR+USD+Climbs+ECB+Signals+Steady+Rates+LiveMint'
+  },
+  {
+    id:64, category:'forex',
+    title:'Japanese Yen Hits 34-Year Low; BoJ Intervention Fears Rise',
+    description:'The Japanese yen weakened past 155 per dollar, its weakest since 1990, intensifying speculation that the Bank of Japan may intervene in currency markets to arrest the sharp depreciation.',
+    source:'Financial Express', date: daysAgo(2),
+    emoji:'🇯🇵', imgSrc: null,
+    url:'https://www.google.com/search?q=Japanese+Yen+34+Year+Low+BoJ+Intervention+Financial+Express'
+  },
+  {
+    id:65, category:'forex',
+    title:'India\'s Current Account Deficit Narrows to 0.7% of GDP',
+    description:'India\'s current account deficit narrowed sharply to 0.7% of GDP in the latest quarter, driven by a surge in services exports and a moderation in the trade deficit, strengthening the rupee outlook.',
+    source:'Moneycontrol', date: daysAgo(2),
+    emoji:'📊', imgSrc: null,
+    url:'https://www.google.com/search?q=India+Current+Account+Deficit+0.7+GDP+Moneycontrol'
+  },
+  {
+    id:66, category:'forex',
+    title:'RBI Intervenes Heavily; Buys $4 Billion to Build Reserves',
+    description:'The Reserve Bank of India purchased approximately $4 billion from the spot foreign exchange market over two days to build reserves and prevent excessive appreciation of the rupee.',
+    source:'Economic Times', date: daysAgo(3),
+    emoji:'🏦', imgSrc: null,
+    url:'https://www.google.com/search?q=RBI+Intervenes+Buys+4+Billion+Reserves+Economic+Times'
+  },
+  {
+    id:67, category:'forex',
+    title:'Chinese Yuan Depreciates on Property Sector Woes',
+    description:'The Chinese yuan weakened to its lowest level in four months as fresh concerns about the country\'s property sector crisis and slowing economic growth weighed on investor sentiment.',
+    source:'Business Standard', date: daysAgo(3),
+    emoji:'🇨🇳', imgSrc: null,
+    url:'https://www.google.com/search?q=Chinese+Yuan+Depreciates+Property+Sector+Business+Standard'
+  },
+  {
+    id:68, category:'forex',
+    title:'India Pushes for Rupee Trade with 20 Countries',
+    description:'India is actively negotiating bilateral trade settlement in Indian rupees with 20 countries, reducing reliance on the US dollar and cutting transaction costs for importers and exporters.',
+    source:'NDTV Profit', date: daysAgo(4),
+    emoji:'🌐', imgSrc: null,
+    url:'https://www.google.com/search?q=India+Rupee+Trade+20+Countries+NDTV+Profit'
+  },
+  {
+    id:69, category:'forex',
+    title:'British Pound Weakest Since 2022 Crisis; UK Fiscal Fears',
+    description:'The British pound fell to its lowest level since the September 2022 mini-budget crisis as investors grew concerned about UK fiscal sustainability and the government\'s borrowing trajectory.',
+    source:'Financial Express', date: daysAgo(5),
+    emoji:'🇬🇧', imgSrc: null,
+    url:'https://www.google.com/search?q=British+Pound+Weakest+2022+Crisis+UK+Fiscal+Financial+Express'
+  },
+  {
+    id:70, category:'forex',
+    title:'SWIFT Payments to India Surge 28% on Rising NRI Remittances',
+    description:'Inward remittances to India through SWIFT increased 28% year-on-year as the NRI diaspora in the Gulf, US, and UK stepped up transfers following better rupee exchange rates.',
+    source:'LiveMint', date: daysAgo(6),
+    emoji:'💸', imgSrc: null,
+    url:'https://www.google.com/search?q=SWIFT+Payments+India+NRI+Remittances+LiveMint'
+  },
+
+  // ── 8. PERSONAL FINANCE ───────────────────────────────────────────────────
+  // To add more Personal Finance news: copy a block below and paste after id:80, increment id.
+  {
+    id:71, category:'personal-finance',
+    title:'New Credit Card Rules: Know Your Rights Under RBI Norms',
+    description:'RBI\'s new credit card regulations mandate clear billing disclosures, minimum due calculation transparency, and a 3-day cooling-off period for credit limit increases without explicit consent.',
+    source:'LiveMint', date: daysAgo(0, 5),
+    emoji:'💳', imgSrc: null,
+    url:'https://www.google.com/search?q=New+Credit+Card+Rules+RBI+Norms+LiveMint'
+  },
+  {
+    id:72, category:'personal-finance',
+    title:'How to Save Tax Under the New Income Tax Regime 2025',
+    description:'With the new tax regime being the default option, financial planners outline 10 strategies including NPS contributions, employer PF contributions, and standard deductions to minimize tax outgo.',
+    source:'NDTV Profit', date: daysAgo(1),
+    emoji:'💰', imgSrc: null,
+    url:'https://www.google.com/search?q=Save+Tax+New+Income+Tax+Regime+2025+NDTV'
+  },
+  {
+    id:73, category:'personal-finance',
+    title:'SIP Inflows Hit Record ₹23,000 Crore in October',
+    description:'Systematic Investment Plans in mutual funds attracted a record ₹23,000 crore in a single month, as retail investors remained committed to long-term wealth creation despite market volatility.',
+    source:'Moneycontrol', date: daysAgo(1),
+    emoji:'📈', imgSrc: null,
+    url:'https://www.google.com/search?q=SIP+Inflows+Record+23000+Crore+October+Moneycontrol'
+  },
+  {
+    id:74, category:'personal-finance',
+    title:'Post Office Small Savings Rates Unchanged; PPF Still at 7.1%',
+    description:'The government kept small savings scheme interest rates unchanged for the October-December quarter, with PPF at 7.1%, NSC at 7.7%, and Senior Citizen Savings Scheme at 8.2%.',
+    source:'Economic Times', date: daysAgo(2),
+    emoji:'📮', imgSrc: null,
+    url:'https://www.google.com/search?q=Post+Office+Small+Savings+Rates+PPF+7.1+Economic+Times'
+  },
+  {
+    id:75, category:'personal-finance',
+    title:'Term Insurance Premiums Set to Rise 10-15% Next Year',
+    description:'Several large life insurance companies plan to revise term insurance premiums upward by 10-15% citing rising claims experience, reinsurance costs, and medical inflation post-COVID.',
+    source:'Business Standard', date: daysAgo(2),
+    emoji:'🛡️', imgSrc: null,
+    url:'https://www.google.com/search?q=Term+Insurance+Premiums+Rise+10+15+Next+Year+Business+Standard'
+  },
+  {
+    id:76, category:'personal-finance',
+    title:'EPFO\'s Higher Pension Scheme: Deadline Extended Again',
+    description:'The Employees\' Provident Fund Organisation extended the deadline for the higher pension scheme option once more, allowing eligible employees to choose pension on actual salary instead of capped wages.',
+    source:'Financial Express', date: daysAgo(3),
+    emoji:'👴', imgSrc: null,
+    url:'https://www.google.com/search?q=EPFO+Higher+Pension+Scheme+Deadline+Extended+Financial+Express'
+  },
+  {
+    id:77, category:'personal-finance',
+    title:'Top 5 Mutual Funds That Delivered 40%+ Returns in 2024',
+    description:'Small-cap and sectoral funds dominated the performance charts in 2024. We analyse the top 5 mutual fund schemes that delivered over 40% absolute returns and whether the momentum can continue.',
+    source:'LiveMint', date: daysAgo(3),
+    emoji:'🚀', imgSrc: null,
+    url:'https://www.google.com/search?q=Top+5+Mutual+Funds+40+Returns+2024+LiveMint'
+  },
+  {
+    id:78, category:'personal-finance',
+    title:'Health Insurance Premiums Surge 20%; Tips to Manage Costs',
+    description:'Health insurance premium renewals are up 20% on average due to rising medical inflation and increased claim frequency. Experts share tips to reduce costs including co-payment options and top-up covers.',
+    source:'Moneycontrol', date: daysAgo(4),
+    emoji:'🏥', imgSrc: null,
+    url:'https://www.google.com/search?q=Health+Insurance+Premiums+Surge+20+Tips+Manage+Moneycontrol'
+  },
+  {
+    id:79, category:'personal-finance',
+    title:'NPS Returns Beat PPF by 3x Over 10 Years; Should You Switch?',
+    description:'Data shows the National Pension System\'s equity-heavy Tier-1 accounts delivered nearly 13% annualized returns over the last decade, significantly outperforming PPF\'s 7.1%, but with higher risk.',
+    source:'Economic Times', date: daysAgo(5),
+    emoji:'🏦', imgSrc: null,
+    url:'https://www.google.com/search?q=NPS+Returns+Beat+PPF+3x+10+Years+Economic+Times'
+  },
+  {
+    id:80, category:'personal-finance',
+    title:'ITR Filing Deadline Extended; Key Changes in Forms This Year',
+    description:'The government extended the income tax return filing deadline to September 15 for AY 2025-26, while introducing new schedule in ITR forms for disclosing foreign assets and cryptocurrency holdings.',
+    source:'NDTV Profit', date: daysAgo(6),
+    emoji:'📋', imgSrc: null,
+    url:'https://www.google.com/search?q=ITR+Filing+Deadline+Extended+Key+Changes+Forms+NDTV'
+  },
+
+  // ── 9. REAL ESTATE ────────────────────────────────────────────────────────
+  // To add more Real Estate news: copy a block below and paste after id:90, increment id.
+  {
+    id:81, category:'real-estate',
+    title:'Housing Sales in Top 8 Cities Hit 15-Year High',
+    description:'Residential property sales across India\'s top 8 cities surged to their highest level in 15 years, driven by improved affordability, pent-up demand, and a shift toward homeownership post-pandemic.',
+    source:'Moneycontrol', date: daysAgo(0, 4),
+    emoji:'🏠', imgSrc: null,
+    url:'https://www.google.com/search?q=Housing+Sales+Top+8+Cities+15+Year+High+Moneycontrol'
+  },
+  {
+    id:82, category:'real-estate',
+    title:'Mumbai Property Registrations Cross 10,000 in a Single Month',
+    description:'Mumbai\'s property registration authority recorded over 10,000 property registrations in a single month for the first time, with stamp duty collections exceeding ₹900 crore.',
+    source:'Economic Times', date: daysAgo(1),
+    emoji:'🏙️', imgSrc: null,
+    url:'https://www.google.com/search?q=Mumbai+Property+Registrations+10000+Single+Month+Economic+Times'
+  },
+  {
+    id:83, category:'real-estate',
+    title:'PMAY Urban 2.0: Government Approves 1 Crore New Houses',
+    description:'The Cabinet approved the second phase of Pradhan Mantri Awas Yojana Urban, sanctioning construction of 1 crore new houses with enhanced subsidies for EWS and LIG beneficiaries.',
+    source:'Business Standard', date: daysAgo(1),
+    emoji:'🏗️', imgSrc: null,
+    url:'https://www.google.com/search?q=PMAY+Urban+2.0+1+Crore+Houses+Business+Standard'
+  },
+  {
+    id:84, category:'real-estate',
+    title:'Commercial Real Estate Vacancy Rate Falls to 5-Year Low',
+    description:'Office space vacancy rates across major Indian cities fell to their lowest level in five years as technology and BFSI companies aggressively expanded, pushing Grade A office rents up by 12%.',
+    source:'LiveMint', date: daysAgo(2),
+    emoji:'🏢', imgSrc: null,
+    url:'https://www.google.com/search?q=Commercial+Real+Estate+Vacancy+Rate+5+Year+Low+LiveMint'
+  },
+  {
+    id:85, category:'real-estate',
+    title:'Affordable Housing Segment Sees 30% Price Jump in 2 Years',
+    description:'Homes priced below ₹50 lakh have appreciated by 30% over the past two years in cities like Pune, Hyderabad, and Chennai, squeezing first-time homebuyers and reshaping affordable housing norms.',
+    source:'Financial Express', date: daysAgo(2),
+    emoji:'📊', imgSrc: null,
+    url:'https://www.google.com/search?q=Affordable+Housing+30+Price+Jump+2+Years+Financial+Express'
+  },
+  {
+    id:86, category:'real-estate',
+    title:'DLF Sells Luxury Apartments Worth ₹7,000 Crore in Hours',
+    description:'DLF\'s luxury housing project in Gurugram sold out within hours of launch, with 795 apartments priced between ₹7-11 crore each, reflecting strong demand for premium real estate from HNIs.',
+    source:'Economic Times', date: daysAgo(3),
+    emoji:'🏰', imgSrc: null,
+    url:'https://www.google.com/search?q=DLF+Luxury+Apartments+7000+Crore+Hours+Economic+Times'
+  },
+  {
+    id:87, category:'real-estate',
+    title:'RERA Complaints Cross 1 Lakh Mark; Enforcement in Focus',
+    description:'The total number of complaints filed with Real Estate Regulatory Authorities across India crossed 1 lakh, with delayed possession and builder defaults being the most common grievances.',
+    source:'Business Standard', date: daysAgo(4),
+    emoji:'⚖️', imgSrc: null,
+    url:'https://www.google.com/search?q=RERA+Complaints+1+Lakh+Enforcement+Business+Standard'
+  },
+  {
+    id:88, category:'real-estate',
+    title:'Data Centres Drive Commercial Real Estate Boom in Tier-2 Cities',
+    description:'The rapid proliferation of data centres and warehousing facilities is driving a commercial real estate boom in Tier-2 cities like Pune, Coimbatore, and Bhubaneswar, offering new investment options.',
+    source:'Moneycontrol', date: daysAgo(4),
+    emoji:'💾', imgSrc: null,
+    url:'https://www.google.com/search?q=Data+Centres+Commercial+Real+Estate+Boom+Tier+2+Cities+Moneycontrol'
+  },
+  {
+    id:89, category:'real-estate',
+    title:'Home Loan Rates May Fall 50 bps if RBI Cuts in December',
+    description:'If the RBI delivers the expected 50 basis points cumulative rate cut by year-end, home loan rates could fall to below 8%, reducing the EMI on a ₹50 lakh loan by approximately ₹1,500 per month.',
+    source:'LiveMint', date: daysAgo(5),
+    emoji:'🏠', imgSrc: null,
+    url:'https://www.google.com/search?q=Home+Loan+Rates+Fall+RBI+Cut+December+LiveMint'
+  },
+  {
+    id:90, category:'real-estate',
+    title:'Hyderabad Emerges as India\'s Top Commercial Real Estate Market',
+    description:'Hyderabad surpassed Bengaluru and Mumbai in net office space absorption for the second consecutive quarter, driven by large-scale campus developments by global tech majors.',
+    source:'Financial Express', date: daysAgo(6),
+    emoji:'📍', imgSrc: null,
+    url:'https://www.google.com/search?q=Hyderabad+Top+Commercial+Real+Estate+Market+Financial+Express'
+  },
+
+  // ── 10. GLOBAL FINANCE ────────────────────────────────────────────────────
+  // To add more Global Finance news: copy a block below and paste after id:100, increment id.
+  {
+    id:91, category:'global',
+    title:'US Fed Holds Rates; Powell Signals Cuts Only When Inflation Cools',
+    description:'Federal Reserve Chair Jerome Powell indicated the central bank is in no rush to cut rates, stating that the inflation trajectory needs to convincingly move toward 2% before easing begins.',
+    source:'Reuters', date: daysAgo(0, 3),
+    emoji:'🇺🇸', imgSrc: null,
+    url:'https://www.google.com/search?q=US+Fed+Holds+Rates+Powell+Inflation+Reuters'
+  },
+  {
+    id:92, category:'global',
+    title:'China\'s GDP Grows 4.7%, Falls Short of 5% Target',
+    description:'China\'s economy grew 4.7% in the latest quarter, falling short of the government\'s 5% annual target amid a prolonged property sector crisis, sluggish consumer spending, and export pressures.',
+    source:'Bloomberg', date: daysAgo(1),
+    emoji:'🇨🇳', imgSrc: null,
+    url:'https://www.google.com/search?q=China+GDP+4.7+5+Percent+Target+Bloomberg'
+  },
+  {
+    id:93, category:'global',
+    title:'UK Autumn Budget: Higher Taxes to Fund NHS and Infrastructure',
+    description:'The UK Chancellor unveiled the Autumn Budget with significant tax hikes on employers\' National Insurance and capital gains to fund a ₹22 billion increase in NHS spending and infrastructure investment.',
+    source:'Financial Times', date: daysAgo(1),
+    emoji:'🇬🇧', imgSrc: null,
+    url:'https://www.google.com/search?q=UK+Autumn+Budget+Higher+Taxes+NHS+Financial+Times'
+  },
+  {
+    id:94, category:'global',
+    title:'Middle East Conflict Drives Oil Risk Premium Higher',
+    description:'Escalating tensions in the Middle East have added a geopolitical risk premium of $5-7 per barrel to crude oil prices as markets worry about potential disruptions to key supply routes through the Strait of Hormuz.',
+    source:'Business Standard', date: daysAgo(2),
+    emoji:'⚠️', imgSrc: null,
+    url:'https://www.google.com/search?q=Middle+East+Conflict+Oil+Risk+Premium+Business+Standard'
+  },
+  {
+    id:95, category:'global',
+    title:'IMF Warns of Global Debt Reaching $100 Trillion',
+    description:'The International Monetary Fund issued a stark warning about global public debt crossing $100 trillion, urging governments to undertake fiscal consolidation to create buffers against future shocks.',
+    source:'Economic Times', date: daysAgo(2),
+    emoji:'🌍', imgSrc: null,
+    url:'https://www.google.com/search?q=IMF+Global+Debt+100+Trillion+Economic+Times'
+  },
+  {
+    id:96, category:'global',
+    title:'US-China Trade War: New Tariffs on EVs and Solar Panels',
+    description:'The Biden administration imposed new tariffs of up to 100% on Chinese-made electric vehicles and 50% on solar panels as part of an escalating trade war targeting strategic industries.',
+    source:'Moneycontrol', date: daysAgo(3),
+    emoji:'⚡', imgSrc: null,
+    url:'https://www.google.com/search?q=US+China+Trade+War+EV+Solar+Tariffs+Moneycontrol'
+  },
+  {
+    id:97, category:'global',
+    title:'Japan\'s BoJ Hikes Rates for First Time in 17 Years',
+    description:'The Bank of Japan raised its benchmark interest rate above zero for the first time in 17 years, signalling the end of its unprecedented negative interest rate policy that had defined global monetary policy.',
+    source:'Financial Express', date: daysAgo(3),
+    emoji:'🇯🇵', imgSrc: null,
+    url:'https://www.google.com/search?q=Japan+BoJ+Hikes+Rates+First+Time+17+Years+Financial+Express'
+  },
+  {
+    id:98, category:'global',
+    title:'EU Carbon Border Adjustment Mechanism Takes Full Effect',
+    description:'The European Union\'s Carbon Border Adjustment Mechanism entered full implementation, requiring importers of cement, steel, aluminium, and fertilisers to pay for embedded carbon, affecting Indian exports.',
+    source:'Business Standard', date: daysAgo(4),
+    emoji:'🌱', imgSrc: null,
+    url:'https://www.google.com/search?q=EU+Carbon+Border+Adjustment+Mechanism+Full+Effect+Business+Standard'
+  },
+  {
+    id:99, category:'global',
+    title:'Saudi Arabia\'s Vision 2030: NEOM City Phase 1 Opens',
+    description:'Saudi Arabia inaugurated the first phase of NEOM\'s The Line mega-project, a futuristic 170km linear city, as part of Vision 2030\'s plan to diversify the Kingdom\'s economy away from oil.',
+    source:'LiveMint', date: daysAgo(5),
+    emoji:'🌆', imgSrc: null,
+    url:'https://www.google.com/search?q=Saudi+Arabia+Vision+2030+NEOM+City+Phase+1+LiveMint'
+  },
+  {
+    id:100, category:'global',
+    title:'BRICS Nations Explore Common Currency to Reduce Dollar Dependence',
+    description:'Finance ministers from BRICS nations discussed the framework for a common trade settlement currency at their annual meeting, aiming to reduce dependence on the US dollar in international transactions.',
+    source:'Economic Times', date: daysAgo(6),
+    emoji:'🌐', imgSrc: null,
+    url:'https://www.google.com/search?q=BRICS+Common+Currency+Dollar+Dependence+Economic+Times'
+  },
+
+]; // END OF NEWS ARRAY — add new articles above this line
+
+// ─────────────────────────────────────────────
+// HELPER: date builder
+// ─────────────────────────────────────────────
+function daysAgo(days, hoursOffset) {
+  var d = new Date();
+  d.setDate(d.getDate() - days);
+  if (hoursOffset) d.setHours(d.getHours() - hoursOffset);
+  return d.toISOString();
+}
+
+// ─────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+let bookmarks = JSON.parse(localStorage.getItem('trakn-bookmarks') || '[]');
+let currentCat = 'all', currentSearch = '';
+
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
+function init() {
+  updateClock();
+  setInterval(updateClock, 1000);
+  renderAll();
+  renderBookmarkPanel();
+  buildTicker();
+  setupEventListeners();
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+function updateClock() {
+  var now = new Date();
+  var opts = { weekday:'long', day:'numeric', month:'long', year:'numeric' };
+  var time = now.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  $('liveTime').textContent = now.toLocaleDateString('en-IN', opts) + ' • ' + time;
+}
+
+// ─────────────────────────────────────────────
+// RENDER
+// ─────────────────────────────────────────────
+function renderAll() {
+  var q = currentSearch.toLowerCase();
+  var filtered = NEWS.filter(function(a) {
+    var matchCat = currentCat === 'all' || a.category === currentCat;
+    var matchSearch = !q || a.title.toLowerCase().includes(q) || a.description.toLowerCase().includes(q);
+    return matchCat && matchSearch;
+  });
+  $('newsGrid').innerHTML = '';
+  filtered.forEach(function(a) { $('newsGrid').appendChild(makeCard(a)); });
+}
+
+function makeCard(a) {
+  var cat = CATS[a.category] || { label:'Finance', cls:'cat-pf', emoji:'📰' };
+  var isBm = bookmarks.some(function(b) { return b.id === a.id; });
+  var div = document.createElement('div');
+  div.className = 'news-card' + (isBm ? ' bookmarked' : '');
+
+  // IMAGE: if imgSrc is set, show <img>; otherwise show emoji placeholder
+  var imageHTML = '';
+  if (a.imgSrc) {
+    imageHTML = '<div class="card-image-wrap"><img class="card-img" src="' + a.imgSrc + '" alt="' + a.title + '" onerror="this.parentNode.innerHTML=\'<span class=card-emoji-placeholder>' + a.emoji + '</span>\'"><div class="card-cat-overlay"><span class="card-cat ' + cat.cls + '">' + cat.label + '</span></div></div>';
+  } else {
+    imageHTML = '<div class="card-image-wrap"><span class="card-emoji-placeholder">' + (a.emoji || cat.emoji) + '</span><div class="card-cat-overlay"><span class="card-cat ' + cat.cls + '">' + cat.label + '</span></div></div>';
+  }
+
+  div.innerHTML = imageHTML +
+    '<div class="card-body">' +
+      '<div class="card-meta">' +
+        '<span class="card-date">' + timeAgo(a.date) + '</span>' +
+      '</div>' +
+      // Title has NO onclick — cursor: default prevents accidental clicks
+      '<div class="card-title">' + a.title + '</div>' +
+      '<div class="card-desc">' + a.description + '</div>' +
+      '<div class="card-footer">' +
+        '<div class="card-source">' + a.source + '</div>' +
+        '<div class="card-actions">' +
+          '<button class="btn-icon ' + (isBm ? 'bookmarked' : '') + '" title="' + (isBm ? 'Remove bookmark' : 'Bookmark') + '" onclick="toggleBookmark(' + a.id + ', this)">' + (isBm ? '🔖' : '🏷️') + '</button>' +
+          // READ is the ONLY way to open the article URL
+          '<a class="btn-read" href="' + a.url + '" target="_blank" rel="noopener">Read ↗</a>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  return div;
+}
+
+// ─────────────────────────────────────────────
+// BOOKMARKS
+// ─────────────────────────────────────────────
+function toggleBookmark(id, btn) {
+  var art = NEWS.find(function(a) { return a.id === id; });
+  var idx = bookmarks.findIndex(function(b) { return b.id === id; });
+  if (idx === -1) {
+    bookmarks.push(art);
+    btn.classList.add('bookmarked');
+    btn.textContent = '🔖';
+    btn.title = 'Remove bookmark';
+    btn.closest('.news-card').classList.add('bookmarked');
+    toast('Article bookmarked!');
+  } else {
+    bookmarks.splice(idx, 1);
+    btn.classList.remove('bookmarked');
+    btn.textContent = '🏷️';
+    btn.title = 'Bookmark';
+    btn.closest('.news-card').classList.remove('bookmarked');
+    toast('Bookmark removed');
+  }
+  localStorage.setItem('trakn-bookmarks', JSON.stringify(bookmarks));
+  renderBookmarkPanel();
+}
+
+function renderBookmarkPanel() {
+  $('bmCount').textContent = bookmarks.length;
+  if (bookmarks.length === 0) {
+    $('bookmarkList').innerHTML = '<div class="empty-bm">No saved articles yet.</div>';
+    return;
+  }
+  $('bookmarkList').innerHTML = bookmarks.slice(0, 6).map(function(b) {
+    return '<div class="bookmark-item" onclick="window.open(\'' + b.url + '\',\'_blank\')">' +
+      '<div class="bm-icon">' + (b.emoji || '📰') + '</div>' +
+      '<div class="bm-title">' + b.title + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+// ─────────────────────────────────────────────
+// TICKER
+// ─────────────────────────────────────────────
+function buildTicker() {
+  var items = NEWS.map(function(a) {
+    return '<span class="ticker-item">' + a.emoji + ' ' + a.title + '</span>';
+  });
+  $('tickerInner').innerHTML = items.concat(items).join('');
+}
+
+// ─────────────────────────────────────────────
+// UTILITIES
+// ─────────────────────────────────────────────
+function toast(msg) {
+  $('toastMsg').textContent = msg;
+  $('toast').classList.add('show');
+  setTimeout(function() { $('toast').classList.remove('show'); }, 2500);
+}
+
+function timeAgo(d) {
+  var s = Math.floor((Date.now() - new Date(d)) / 1000);
+  if (s < 60) return 'Just now';
+  if (s < 3600) return Math.floor(s / 60) + 'm ago';
+  if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+  return Math.floor(s / 86400) + 'd ago';
+}
+
+// ─────────────────────────────────────────────
+// EVENT LISTENERS
+// ─────────────────────────────────────────────
+function setupEventListeners() {
+  document.querySelectorAll('.cat-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.cat-btn').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      currentCat = btn.dataset.cat;
+      renderAll();
+    });
+  });
+  $('searchInput').addEventListener('input', function(e) {
+    currentSearch = e.target.value;
+    renderAll();
+  });
+}
+
+init();
+</script>
+</body>
+</html>

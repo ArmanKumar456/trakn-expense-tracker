@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome - TRAKN</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="icon" type="image/png" href="/static/images/favicon.png">
+</head>
+<body>
+    <div class="welcome-container">
+        <div class="welcome-card animate-fade-in">
+
+    <!-- Slides -->
+    <div class="slides">
+
+        <!-- Slide 1 -->
+        <div class="slide active">
+            <h1>Welcome to <span class="flow">TRAKN!</span></h1>
+            <p>Your personal expense tracking command center.</p>
+        </div>
+
+        <!-- Slide 2 -->
+        <div class="slide">
+            <h1>Track Everything 💰</h1>
+            <p>Monitor income, expenses, and stay in control of every rupee.</p>
+        </div>
+
+        <!-- Slide 3 -->
+        <div class="slide">
+            <h1>Set Goals 🎯</h1>
+            <p>Create budgets, track goals, and grow your savings smartly.</p>
+        </div>
+
+    </div>
+
+    <!-- Progress Dots -->
+    <div class="progress-dots">
+        <span class="progress-dot active"></span>
+        <span class="progress-dot"></span>
+        <span class="progress-dot"></span>
+    </div>
+
+    <!-- Buttons -->
+    <div style="display:flex; gap:10px; margin-top:20px;">
+        <button id="prevBtn" class="btn btn-secondary" style="flex:1;">Back</button>
+
+        <button id="nextBtn" class="btn btn-primary" style="flex:1;">
+            Next
+        </button>
+    </div>
+
+</div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+    <script>
+let currentSlide = 0;
+
+const slides = document.querySelectorAll(".slide");
+const dots = document.querySelectorAll(".progress-dot");
+const nextBtn = document.getElementById("nextBtn");
+const prevBtn = document.getElementById("prevBtn");
+
+function updateUI() {
+    slides.forEach((s, i) => {
+        s.classList.toggle("active", i === currentSlide);
+    });
+
+    dots.forEach((d, i) => {
+        d.classList.toggle("active", i === currentSlide);
+    });
+
+    prevBtn.style.display = currentSlide === 0 ? "none" : "block";
+
+    if (currentSlide === slides.length - 1) {
+        nextBtn.innerText = "Get Started";
+    } else {
+        nextBtn.innerText = "Next";
+    }
+}
+
+nextBtn.addEventListener("click", () => {
+    if (currentSlide < slides.length - 1) {
+        currentSlide++;
+        updateUI();
+    } else {
+        window.location.href = "/dashboard.html";
+    }
+});
+
+prevBtn.addEventListener("click", () => {
+    if (currentSlide > 0) {
+        currentSlide--;
+        updateUI();
+    }
+});
+
+// Init
+updateUI();
+</script>
+</body>
+</html>

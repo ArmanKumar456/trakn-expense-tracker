@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Goals - TRAKN</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="icon" type="image/png" href="/static/images/favicon.png">
+    <style>
+        .goal-modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.55);
+            backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1000; animation: fadeIn 0.2s ease;
+        }
+        @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+        .goal-modal {
+            background: var(--bg-white, #fff);
+            border-radius: 16px; padding: 2rem;
+            width: 100%; max-width: 420px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            animation: slideUp 0.25s ease;
+        }
+        @keyframes slideUp { from{transform:translateY(30px);opacity:0} to{transform:translateY(0);opacity:1} }
+        .goal-modal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; }
+        .goal-modal-header h2 { font-size:1.2rem; font-weight:700; margin:0; }
+        .goal-modal-close { background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-secondary,#666); line-height:1; padding:0 4px; }
+        .goal-modal-close:hover { color:var(--red-expense,#e53e3e); }
+        .goal-modal-summary { background:var(--bg-light,#f7f7f7); border-radius:12px; padding:1rem 1.25rem; margin-bottom:1.5rem; }
+        .goal-modal-summary .goal-name { font-weight:600; font-size:1rem; margin-bottom:0.5rem; }
+        .goal-modal-progress-row { display:flex; justify-content:space-between; font-size:0.82rem; color:var(--text-secondary,#666); margin-bottom:0.5rem; }
+        .goal-modal-bar-wrap { background:var(--border-color,#e2e8f0); border-radius:99px; height:8px; overflow:hidden; }
+        .goal-modal-bar-fill { height:100%; border-radius:99px; background:var(--green-income,#28a745); transition:width 0.4s ease; }
+        .goal-modal-remaining { margin-top:0.5rem; font-size:0.82rem; font-weight:600; color:var(--green-income,#28a745); }
+        .quick-add-label { font-size:0.8rem; color:var(--text-secondary,#888); margin-bottom:0.5rem; }
+        .quick-add-chips { display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1rem; }
+        .chip { padding:4px 14px; border-radius:99px; border:1.5px solid var(--border-color,#e2e8f0); background:none; font-size:0.82rem; cursor:pointer; transition:all 0.15s; color:var(--text-primary,#111); }
+        .chip:hover { border-color:var(--green-income,#28a745); color:var(--green-income,#28a745); background:rgba(40,167,69,0.06); }
+
+        /* ── Goal Card ── */
+        .goal-card { background:var(--bg-white,#fff); border:1px solid var(--border-color,#e2e8f0); border-radius:14px; padding:1.25rem 1.5rem; margin-bottom:1rem; transition:box-shadow 0.2s; }
+        .goal-card:hover { box-shadow:0 4px 20px rgba(0,0,0,0.08); }
+        .goal-card.completed { border-color:#f59e0b40; background: linear-gradient(135deg, #fffbeb, #fff); }
+        .goal-card-top { display:flex; align-items:center; gap:1rem; margin-bottom:1rem; }
+        .goal-card-icon { width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.1rem; font-weight:700; color:#fff; flex-shrink:0; }
+        .goal-card-info { flex:1; min-width:0; }
+        .goal-card-title { font-weight:700; font-size:1rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .goal-card-due { font-size:0.78rem; margin-top:2px; }
+        .goal-card-percent { font-size:1.4rem; font-weight:800; color:var(--green-income,#28a745); flex-shrink:0; }
+        .goal-card-percent.complete { color:#f59e0b; }
+        .goal-card-amounts { display:flex; justify-content:space-between; font-size:0.82rem; color:var(--text-secondary,#888); margin-bottom:0.6rem; flex-wrap:wrap; gap:4px; }
+        .goal-card-amounts strong { color:var(--text-primary,#111); }
+        .goal-progress-bar-wrap { background:var(--border-color,#e2e8f0); border-radius:99px; height:10px; overflow:hidden; margin-bottom:1rem; }
+        .goal-progress-bar-fill { height:100%; border-radius:99px; transition:width 0.5s ease; }
+        .goal-card-actions { display:flex; gap:0.6rem; }
+        .btn-add-money { flex:1; padding:8px 0; border-radius:8px; border:none; background:var(--green-income,#28a745); color:#fff; font-weight:600; font-size:0.88rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; transition:opacity 0.15s; }
+        .btn-add-money:hover { opacity:0.88; }
+        .btn-add-money:disabled { opacity:0.5; cursor:not-allowed; }
+        .btn-delete-goal { padding:8px 14px; border-radius:8px; border:1.5px solid var(--border-color,#e2e8f0); background:none; color:var(--red-expense,#e53e3e); cursor:pointer; font-size:0.82rem; font-weight:600; transition:all 0.15s; }
+        .btn-delete-goal:hover { background:rgba(229,62,62,0.06); border-color:var(--red-expense,#e53e3e); }
+        .goal-complete-badge { display:inline-flex; align-items:center; gap:4px; background:linear-gradient(135deg,#f59e0b,#f97316); color:#fff; font-size:0.72rem; font-weight:700; padding:2px 10px; border-radius:99px; margin-left:8px; vertical-align:middle; }
+
+        /* ── Goal Timeline / History ── */
+        .goal-timeline { margin-top:1rem; border-top:1px solid var(--border-color,#e2e8f0); padding-top:1rem; }
+        .goal-timeline-title { font-size:0.78rem; font-weight:700; color:var(--text-gray,#888); text-transform:uppercase; letter-spacing:.04em; margin-bottom:0.75rem; display:flex; align-items:center; gap:6px; cursor:pointer; user-select:none; }
+        .goal-timeline-title svg { transition:transform .2s; }
+        .goal-timeline-title.open svg { transform:rotate(180deg); }
+        .goal-timeline-body { display:none; }
+        .goal-timeline-body.open { display:block; }
+
+        /* stat chips inside timeline */
+        .goal-stat-chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:0.75rem; }
+        .goal-stat-chip { display:inline-flex; flex-direction:column; gap:1px; background:var(--bg-light,#f7f7f7); border:1px solid var(--border-color,#e2e8f0); border-radius:8px; padding:4px 10px; }
+        .goal-stat-chip .sc-label { font-size:.6rem; text-transform:uppercase; letter-spacing:.04em; font-weight:700; color:var(--text-gray,#888); }
+        .goal-stat-chip .sc-value { font-size:.76rem; font-weight:700; color:var(--text-primary,#111); }
+        .goal-stat-chip.green { background:#d1fae5; border-color:#6ee7b7; }
+        .goal-stat-chip.green .sc-label { color:#065f46; }
+        .goal-stat-chip.green .sc-value { color:#065f46; }
+        .goal-stat-chip.amber { background:#fffbeb; border-color:#fcd34d; }
+        .goal-stat-chip.amber .sc-label { color:#b45309; }
+        .goal-stat-chip.amber .sc-value { color:#b45309; }
+        .goal-stat-chip.blue { background:#eef2ff; border-color:#a5b4fc; }
+        .goal-stat-chip.blue .sc-label { color:#4338ca; }
+        .goal-stat-chip.blue .sc-value { color:#4338ca; }
+        .goal-stat-chip.red { background:#fee2e2; border-color:#fca5a5; }
+        .goal-stat-chip.red .sc-label { color:#991b1b; }
+        .goal-stat-chip.red .sc-value { color:#991b1b; }
+
+        /* payment history rows */
+        .payment-history { display:flex; flex-direction:column; gap:6px; max-height:200px; overflow-y:auto; }
+        .payment-row { display:flex; align-items:center; gap:10px; padding:6px 10px; background:var(--bg-light,#f7f7f7); border-radius:8px; border:1px solid var(--border-color,#e2e8f0); }
+        .payment-dot { width:8px; height:8px; border-radius:50%; background:var(--green-income,#28a745); flex-shrink:0; }
+        .payment-date { font-size:.75rem; color:var(--text-secondary,#666); flex-shrink:0; min-width:80px; }
+        .payment-amt { font-size:.8rem; font-weight:700; color:var(--green-income,#28a745); margin-left:auto; }
+        .payment-note { font-size:.72rem; color:var(--text-gray,#888); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+        /* Completion banner inside card */
+        .goal-complete-banner {
+            background: linear-gradient(135deg, #f59e0b20, #f9731620);
+            border: 1px solid #f59e0b60;
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .goal-complete-banner .banner-title { font-size:1rem; font-weight:800; color:#b45309; margin-bottom:2px; }
+        .goal-complete-banner .banner-sub   { font-size:0.78rem; color:#92400e; }
+
+        /* Confetti */
+        .confetti-piece { position:fixed; width:10px; height:10px; border-radius:2px; animation:confettiFall linear forwards; pointer-events:none; z-index:9999; }
+        @keyframes confettiFall { 0%{transform:translateY(-20px) rotate(0deg);opacity:1} 100%{transform:translateY(100vh) rotate(720deg);opacity:0} }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo"><span class="fin">TRAK</span><span class="flow">N</span></div>
+        </div>
+        <nav class="sidebar-nav">
+            <span class="nav-section-title">Main</span>
+            <a href="/dashboard.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>Dashboard</a>
+            <a href="/transactions.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="7" x2="19" y2="7"></line><line x1="5" y1="11" x2="16" y2="11"></line><path d="M5 7c6 0 7 4 7 6s-2 4-7 4"></path><line x1="10" y1="15" x2="17" y2="21"></line></svg>Transactions</a>
+            <a href="/income.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>Income</a>
+            <a href="/expense.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="8" y1="12" x2="16" y2="12"></line></svg>Expenses</a>
+            <a href="/budget.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>Budgets</a>
+            <a href="/recurring.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>Recurring</a>
+            <a href="/goals.html" class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>Goals</a>
+            <a href="/networth.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"></rect><path d="M16 12h4"></path><circle cx="16" cy="12" r="1"></circle></svg>Net Worth</a>
+            <span class="nav-section-title">Insights</span>
+            <a href="/analytics.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>Analytics</a>
+            <a href="/calculator.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><circle cx="8" cy="11" r="1"></circle><circle cx="12" cy="11" r="1"></circle><circle cx="16" cy="11" r="1"></circle><circle cx="8" cy="15" r="1"></circle><circle cx="12" cy="15" r="1"></circle><circle cx="16" cy="15" r="1"></circle></svg>Calculator</a>
+            <a href="/news.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"></rect><line x1="7" y1="8" x2="17" y2="8"></line><line x1="7" y1="12" x2="17" y2="12"></line><line x1="7" y1="16" x2="13" y2="16"></line><line x1="4" y1="4" x2="4" y2="20"></line></svg>News</a>
+            <a href="/import.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>Import</a>
+            <a href="/feedback.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z">
+                        </path>
+                    </svg>
+                    Feedback
+                </a>
+            <span class="nav-section-title">Settings</span>
+            <a href="/admin.html" class="nav-item admin-link" style="display:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>Admin</a>
+            <a href="/profile.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>Profile</a>
+            <a href="#" class="nav-item" data-logout><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>Sign Out</a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="page-header">
+            <div class="header-left">
+                <h1>Financial Goals</h1>
+                <p id="currentMonth"></p>
+            </div>
+            <div class="header-right">
+                <button class="theme-toggle" data-theme-toggle>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                    <span>Dark</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Summary Cards -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.5rem;">
+            <div class="balance-card" style="background:linear-gradient(135deg,#1a5a3a 0%,#28a745 100%);margin:0;">
+                <div class="balance-label" style="color:rgba(255,255,255,0.8);font-size:0.8rem;">Total Saved</div>
+                <div class="balance-amount" id="totalSaved" style="font-size:1.6rem;">₹0</div>
+            </div>
+            <div class="balance-card" style="background:linear-gradient(135deg,#1a3a5a 0%,#2874a7 100%);margin:0;">
+                <div class="balance-label" style="color:rgba(255,255,255,0.8);font-size:0.8rem;">Total Target</div>
+                <div class="balance-amount" id="totalTarget" style="font-size:1.6rem;">₹0</div>
+            </div>
+            <div class="balance-card" style="background:linear-gradient(135deg,#5a1a1a 0%,#a72828 100%);margin:0;">
+                <div class="balance-label" style="color:rgba(255,255,255,0.8);font-size:0.8rem;">Still Needed</div>
+                <div class="balance-amount" id="totalRemaining" style="font-size:1.6rem;">₹0</div>
+            </div>
+        </div>
+
+        <!-- Goal Cards -->
+        <div class="card" style="margin-bottom:1.5rem;">
+            <div class="card-header"><h3 class="card-title">Your Goals</h3></div>
+            <div id="goalCardList" style="padding:0.5rem 1rem 1rem;"></div>
+            <div class="empty-state" id="emptyGoal" style="padding:2.5rem;display:none;">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>
+                <h3>No goals yet</h3>
+                <p>Add your first goal below to start tracking progress</p>
+            </div>
+        </div>
+
+        <!-- Add Goal Form -->
+        <div class="form-page">
+            <div class="form-card">
+                <h2>Add New Goal</h2>
+                <form id="goalForm">
+                    <div class="form-group">
+                        <label for="title">Goal Name</label>
+                        <input type="text" id="title" name="title" class="form-control" placeholder="e.g., New Car, Vacation, Emergency Fund" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="targetAmount">Target Amount (₹)</label>
+                            <input type="number" id="targetAmount" name="targetAmount" class="form-control" placeholder="0.00" step="0.01" min="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="currentAmount">Already Saved (₹)</label>
+                            <input type="number" id="currentAmount" name="currentAmount" class="form-control" placeholder="0.00" step="0.01" min="0" value="0">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="date">Target Date</label>
+                        <input type="date" id="date" name="date" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="notes">Notes (Optional)</label>
+                        <textarea id="notes" name="notes" class="form-control" rows="3" placeholder="What is this goal for?"></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="cancelBtn">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                            Add Goal
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- ADD MONEY MODAL -->
+<div class="goal-modal-overlay" id="addMoneyModal" style="display:none;">
+    <div class="goal-modal">
+        <div class="goal-modal-header">
+            <h2>💰 Add Money to Goal</h2>
+            <button class="goal-modal-close" id="closeMoneyModal">&times;</button>
+        </div>
+        <div class="goal-modal-summary">
+            <div class="goal-name" id="modal-goal-name">—</div>
+            <div class="goal-modal-progress-row">
+                <span>Saved: <strong id="modal-current">₹0</strong></span>
+                <span>Target: <strong id="modal-target">₹0</strong></span>
+            </div>
+            <div class="goal-modal-bar-wrap">
+                <div class="goal-modal-bar-fill" id="modal-bar" style="width:0%;"></div>
+            </div>
+            <div class="goal-modal-remaining" id="modal-remaining">₹0 still needed</div>
+        </div>
+        <div class="quick-add-label">Quick add</div>
+        <div class="quick-add-chips" id="quickChips"></div>
+        <div class="form-group">
+            <label for="addMoneyAmount">Amount to Add (₹)</label>
+            <input type="number" id="addMoneyAmount" class="form-control" placeholder="Enter amount" step="0.01" min="1">
+        </div>
+        <div class="form-group">
+            <label for="addMoneyNote">Note (Optional)</label>
+            <input type="text" id="addMoneyNote" class="form-control" placeholder="e.g., Monthly saving, Bonus, Gift">
+        </div>
+        <div class="form-actions" style="margin-top:1.2rem;">
+            <button class="btn btn-secondary" id="cancelMoneyBtn">Cancel</button>
+            <button class="btn btn-primary" id="confirmAddMoney" style="background:var(--green-income,#28a745);border-color:var(--green-income,#28a745);">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                Add Money
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/app.js"></script>
+<script>
+if (localStorage.getItem('trakn-is-admin') === 'true') {
+    const al = document.querySelector('.admin-link');
+    if (al) al.style.display = 'flex';
+}
+
+let allGoals     = [];
+let activeGoalId = null;
+
+// ── Goal payment history stored in localStorage ────────────
+// Structure: { [goalId]: [ { date, amount, note, running_total } ] }
+function getHistory(goalId) {
+    try {
+        const raw = localStorage.getItem('trakn-goal-history-' + goalId);
+        return raw ? JSON.parse(raw) : [];
+    } catch { return []; }
+}
+function saveHistory(goalId, history) {
+    localStorage.setItem('trakn-goal-history-' + goalId, JSON.stringify(history));
+}
+function addHistoryEntry(goalId, amount, note, newTotal) {
+    const history = getHistory(goalId);
+    history.push({
+        date:  todayStr(),
+        amount: amount,
+        note:   note || '',
+        total:  newTotal
+    });
+    saveHistory(goalId, history);
+}
+function getGoalMeta(goalId) {
+    try {
+        const raw = localStorage.getItem('trakn-goal-meta-' + goalId);
+        return raw ? JSON.parse(raw) : {};
+    } catch { return {}; }
+}
+function saveGoalMeta(goalId, meta) {
+    localStorage.setItem('trakn-goal-meta-' + goalId, JSON.stringify(meta));
+}
+
+// ── Date helpers ───────────────────────────────────────────
+function todayStr() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function parseDateSafe(str) {
+    if (!str) return null;
+    const clean = String(str).split('T')[0];
+    const parts = clean.split('-').map(Number);
+    if (parts.length !== 3 || !parts[0]) return null;
+    return new Date(parts[0], parts[1] - 1, parts[2], 12, 0, 0);
+}
+function formatDateSafe(str) {
+    const d = parseDateSafe(str);
+    if (!d) return str || '—';
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+function daysBetween(dateStr1, dateStr2) {
+    const d1 = parseDateSafe(dateStr1);
+    const d2 = parseDateSafe(dateStr2);
+    if (!d1 || !d2) return 0;
+    return Math.round((d2 - d1) / 86400000);
+}
+
+document.getElementById('currentMonth').textContent =
+    new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+document.getElementById('date').value = FinFlow.Utils.todayStr();
+
+document.getElementById('cancelBtn').addEventListener('click', () => {
+    document.getElementById('goalForm').reset();
+    document.getElementById('date').value = FinFlow.Utils.todayStr();
+    document.getElementById('currentAmount').value = 0;
+});
+
+// ── Add Goal ───────────────────────────────────────────────
+document.getElementById('goalForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const data = {
+        title:          fd.get('title').trim(),
+        target_amount:  parseFloat(fd.get('targetAmount')),
+        current_amount: parseFloat(fd.get('currentAmount') || 0),
+        target_date:    fd.get('date'),
+        notes:          fd.get('notes') || ''
+    };
+    if (data.target_amount <= 0) { FinFlow.Toast.error('Target amount must be > 0'); return; }
+
+    const btn = document.getElementById('submitBtn');
+    const origHTML = btn.innerHTML;
+    btn.disabled = true; btn.textContent = 'Adding...';
+    try {
+        const result = await FinFlow.Goals.create(data);
+        // Save meta: start date
+        const newId = result.id || result;
+        if (newId) {
+            saveGoalMeta(newId, { start_date: todayStr() });
+            if (data.current_amount > 0) {
+                addHistoryEntry(newId, data.current_amount, 'Initial savings', data.current_amount);
+            }
+        }
+        FinFlow.Toast.success('Goal added!');
+        e.target.reset();
+        document.getElementById('date').value = FinFlow.Utils.todayStr();
+        document.getElementById('currentAmount').value = 0;
+        await loadGoalData();
+    } catch(err) {
+        FinFlow.Toast.error(err.message || 'Failed to add goal');
+    } finally {
+        btn.disabled = false; btn.innerHTML = origHTML;
+    }
+});
+
+// ── Add Money Modal ────────────────────────────────────────
+function openAddMoneyModal(goalId) {
+    const goal = allGoals.find(g => String(g.id) === String(goalId));
+    if (!goal) return;
+    activeGoalId = goalId;
+
+    const current   = parseFloat(goal.current_amount) || 0;
+    const target    = parseFloat(goal.target_amount)  || 0;
+    const remaining = Math.max(target - current, 0);
+    const percent   = target > 0 ? Math.min((current / target) * 100, 100) : 0;
+
+    document.getElementById('modal-goal-name').textContent = goal.title;
+    document.getElementById('modal-current').textContent   = '₹' + current.toLocaleString('en-IN');
+    document.getElementById('modal-target').textContent    = '₹' + target.toLocaleString('en-IN');
+    document.getElementById('modal-bar').style.width       = percent.toFixed(1) + '%';
+    document.getElementById('modal-remaining').textContent = remaining > 0
+        ? '₹' + remaining.toLocaleString('en-IN') + ' still needed'
+        : '🎉 Goal already reached!';
+
+    const chips = [];
+    if (remaining > 0) {
+        const suggestions = [
+            Math.round(remaining * 0.1),
+            Math.round(remaining * 0.25),
+            Math.round(remaining * 0.5),
+            Math.round(remaining)
+        ].filter((v, i, arr) => v > 0 && arr.indexOf(v) === i);
+        suggestions.forEach(amt => {
+            chips.push(`<button class="chip" data-amt="${amt}">₹${amt.toLocaleString('en-IN')}</button>`);
+        });
+    }
+    document.getElementById('quickChips').innerHTML = chips.join('') ||
+        '<span style="font-size:0.8rem;color:var(--text-secondary)">Goal already complete 🎉</span>';
+    document.getElementById('quickChips').querySelectorAll('.chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            document.getElementById('addMoneyAmount').value = chip.dataset.amt;
+            document.getElementById('addMoneyAmount').focus();
+        });
+    });
+
+    document.getElementById('addMoneyAmount').value = '';
+    document.getElementById('addMoneyNote').value   = '';
+    document.getElementById('addMoneyModal').style.display = 'flex';
+    setTimeout(() => document.getElementById('addMoneyAmount').focus(), 100);
+}
+
+function closeAddMoneyModal() {
+    document.getElementById('addMoneyModal').style.display = 'none';
+    activeGoalId = null;
+}
+
+document.getElementById('addMoneyModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeAddMoneyModal(); });
+document.getElementById('closeMoneyModal').addEventListener('click', closeAddMoneyModal);
+document.getElementById('cancelMoneyBtn').addEventListener('click', closeAddMoneyModal);
+document.getElementById('addMoneyAmount').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('confirmAddMoney').click(); });
+
+// ── Confirm Add Money ──────────────────────────────────────
+document.getElementById('confirmAddMoney').addEventListener('click', async () => {
+    const amtInput  = document.getElementById('addMoneyAmount');
+    const noteInput = document.getElementById('addMoneyNote');
+    const amount    = parseFloat(amtInput.value);
+    const note      = noteInput.value.trim();
+
+    if (!amount || amount <= 0) {
+        amtInput.focus();
+        amtInput.style.borderColor = 'var(--red-expense)';
+        setTimeout(() => amtInput.style.borderColor = '', 1200);
+        return;
+    }
+
+    const goal = allGoals.find(g => String(g.id) === String(activeGoalId));
+    if (!goal) return;
+
+    const current     = parseFloat(goal.current_amount) || 0;
+    const target      = parseFloat(goal.target_amount)  || 0;
+    const newAmount   = current + amount;
+    const wasComplete = current >= target;
+    const nowComplete = newAmount >= target;
+
+    const btn = document.getElementById('confirmAddMoney');
+    btn.disabled = true; btn.textContent = 'Saving...';
+
+    try {
+        await FinFlow.Goals.update(activeGoalId, { current_amount: newAmount });
+
+        // Save to history
+        addHistoryEntry(activeGoalId, amount, note, newAmount);
+
+        // If just completed, record completion date
+        if (!wasComplete && nowComplete) {
+            const meta = getGoalMeta(activeGoalId);
+            meta.completed_date = todayStr();
+            saveGoalMeta(activeGoalId, meta);
+        }
+
+        closeAddMoneyModal();
+
+        if (!wasComplete && nowComplete) {
+            FinFlow.Toast.success('🎉 Goal reached! Congratulations!');
+            launchConfetti();
+        } else {
+            FinFlow.Toast.success(`₹${amount.toLocaleString('en-IN')} added successfully!`);
+        }
+        await loadGoalData();
+    } catch(err) {
+        FinFlow.Toast.error(err.message || 'Failed to add money');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg> Add Money`;
+    }
+});
+
+// ── Delete Goal ────────────────────────────────────────────
+async function deleteGoal(goalId) {
+    if (!confirm('Delete this goal? All progress will be lost.')) return;
+    try {
+        await FinFlow.Goals.delete(goalId);
+        localStorage.removeItem('trakn-goal-history-' + goalId);
+        localStorage.removeItem('trakn-goal-meta-'    + goalId);
+        FinFlow.Toast.success('Goal deleted.');
+        await loadGoalData();
+    } catch(err) {
+        FinFlow.Toast.error(err.message || 'Failed to delete goal');
+    }
+}
+
+// ── Toggle timeline section ────────────────────────────────
+function toggleTimeline(goalId) {
+    const title = document.getElementById('tl-title-' + goalId);
+    const body  = document.getElementById('tl-body-'  + goalId);
+    if (!title || !body) return;
+    title.classList.toggle('open');
+    body.classList.toggle('open');
+}
+
+// ── Build due label (FIXED) ────────────────────────────────
+function buildDueLabel(targetDateStr, isComplete) {
+    if (isComplete) return { html: '🏆 Completed!', color: '#b45309' };
+
+    const dueD  = parseDateSafe(targetDateStr);
+    if (!dueD)  return { html: 'No due date', color: 'var(--text-secondary)' };
+
+    const today = new Date(); today.setHours(12,0,0,0);
+    dueD.setHours(12,0,0,0);
+    const diff  = Math.round((dueD - today) / 86400000);
+
+    if (diff < 0) {
+        const overdue = Math.abs(diff);
+        return {
+            html:  `⚠ Overdue by ${overdue} day${overdue !== 1 ? 's' : ''} (was due ${formatDateSafe(targetDateStr)})`,
+            color: 'var(--red-expense,#dc3545)'
+        };
+    }
+    if (diff === 0) return { html: '🔴 Due today!',                          color: 'var(--red-expense,#dc3545)' };
+    if (diff === 1) return { html: `🟠 1 day left · Due ${formatDateSafe(targetDateStr)}`,  color: '#f59e0b' };
+    if (diff <= 7)  return { html: `🟡 ${diff} days left · Due ${formatDateSafe(targetDateStr)}`, color: '#d97706' };
+    return {
+        html:  `Due ${formatDateSafe(targetDateStr)} · ${diff} days left`,
+        color: 'var(--text-secondary,#666)'
+    };
+}
+
+// ── Render Goal Cards ──────────────────────────────────────
+function renderGoalCards(goals) {
+    const container = document.getElementById('goalCardList');
+    const empty     = document.getElementById('emptyGoal');
+
+    if (!goals.length) {
+        container.innerHTML = '';
+        empty.style.display = '';
+        return;
+    }
+    empty.style.display = 'none';
+
+    const colours = ['#4f46e5','#0891b2','#059669','#d97706','#dc2626','#7c3aed','#db2777'];
+
+    container.innerHTML = goals.map((g, idx) => {
+        const current    = parseFloat(g.current_amount) || 0;
+        const target     = parseFloat(g.target_amount)  || 0;
+        const remaining  = Math.max(target - current, 0);
+        const percent    = target > 0 ? Math.min((current / target) * 100, 100) : 0;
+        const isComplete = percent >= 100;
+        const colour     = colours[idx % colours.length];
+
+        // Due label with real diff
+        const due = buildDueLabel(g.target_date, isComplete);
+
+        // Goal meta (start date, completed date)
+        const meta          = getGoalMeta(g.id);
+        const startDate     = meta.start_date     || (g.created_at ? String(g.created_at).split('T')[0] : null);
+        const completedDate = meta.completed_date || null;
+
+        // Payment history
+        const history = getHistory(g.id);
+        const lastPayment = history.length > 0 ? history[history.length - 1] : null;
+
+        // Days taken to complete / days active
+        const daysActive = startDate
+            ? daysBetween(startDate, isComplete && completedDate ? completedDate : todayStr())
+            : null;
+
+        // ── Completion banner ──
+        const completionBanner = isComplete ? `
+            <div class="goal-complete-banner">
+                <div class="banner-title">🎉 Goal Achieved!</div>
+                <div class="banner-sub">
+                    You reached your target of ₹${target.toLocaleString('en-IN')}
+                    ${completedDate ? ` on ${formatDateSafe(completedDate)}` : ''}
+                    ${daysActive !== null ? ` in ${daysActive} day${daysActive !== 1 ? 's' : ''}` : ''}.
+                </div>
+            </div>` : '';
+
+        // ── Timeline chips ──
+        const chips = [];
+        if (startDate)     chips.push(`<div class="goal-stat-chip blue"><span class="sc-label">📅 Started</span><span class="sc-value">${formatDateSafe(startDate)}</span></div>`);
+        if (isComplete && completedDate) chips.push(`<div class="goal-stat-chip green"><span class="sc-label">🏆 Completed</span><span class="sc-value">${formatDateSafe(completedDate)}</span></div>`);
+        if (daysActive !== null) chips.push(`<div class="goal-stat-chip amber"><span class="sc-label">${isComplete ? '⏱ Days Taken' : '⏱ Days Active'}</span><span class="sc-value">${daysActive} day${daysActive !== 1 ? 's' : ''}</span></div>`);
+        if (lastPayment)   chips.push(`<div class="goal-stat-chip"><span class="sc-label">💳 Last Payment</span><span class="sc-value">${formatDateSafe(lastPayment.date)} · ₹${parseFloat(lastPayment.amount).toLocaleString('en-IN')}</span></div>`);
+        if (!isComplete)   chips.push(`<div class="goal-stat-chip red"><span class="sc-label">💰 Still Needed</span><span class="sc-value">₹${remaining.toLocaleString('en-IN')}</span></div>`);
+
+        // ── Payment history rows ──
+        const paymentRows = history.length > 0
+            ? [...history].reverse().map(h => `
+                <div class="payment-row">
+                    <div class="payment-dot"></div>
+                    <div class="payment-date">${formatDateSafe(h.date)}</div>
+                    ${h.note ? `<div class="payment-note">${h.note}</div>` : '<div class="payment-note" style="color:var(--text-gray)">—</div>'}
+                    <div class="payment-amt">+₹${parseFloat(h.amount).toLocaleString('en-IN')}</div>
+                </div>`).join('')
+            : '<div style="font-size:.8rem;color:var(--text-gray);padding:4px 0;">No payments recorded yet.</div>';
+
+        return `
+        <div class="goal-card ${isComplete ? 'completed' : ''}" id="goal-card-${g.id}">
+            <div class="goal-card-top">
+                <div class="goal-card-icon" style="background:${colour};">${g.title.charAt(0).toUpperCase()}</div>
+                <div class="goal-card-info">
+                    <div class="goal-card-title">${g.title}${isComplete ? '<span class="goal-complete-badge">🏆 Done</span>' : ''}</div>
+                    <div class="goal-card-due" style="color:${due.color};">${due.html}</div>
+                </div>
+                <div class="goal-card-percent ${isComplete ? 'complete' : ''}">${Math.round(percent)}%</div>
+            </div>
+
+            ${completionBanner}
+
+            <div class="goal-card-amounts">
+                <span>Saved: <strong>₹${current.toLocaleString('en-IN')}</strong></span>
+                <span>Target: <strong>₹${target.toLocaleString('en-IN')}</strong></span>
+                ${!isComplete ? `<span>Remaining: <strong style="color:var(--red-expense)">₹${remaining.toLocaleString('en-IN')}</strong></span>` : ''}
+            </div>
+            <div class="goal-progress-bar-wrap">
+                <div class="goal-progress-bar-fill" style="width:${percent.toFixed(1)}%;background:${isComplete ? 'linear-gradient(90deg,#f59e0b,#f97316)' : colour};"></div>
+            </div>
+
+            <div class="goal-card-actions">
+                ${!isComplete
+                    ? `<button class="btn-add-money" onclick="openAddMoneyModal('${g.id}')">
+                           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                           Add Money
+                       </button>`
+                    : `<button class="btn-add-money" style="background:#f59e0b;cursor:default;" disabled>🎉 Goal Complete!</button>`
+                }
+                <button class="btn-delete-goal" onclick="deleteGoal('${g.id}')">Delete</button>
+            </div>
+
+            ${g.notes ? `<div style="margin-top:0.75rem;font-size:0.8rem;color:var(--text-secondary);border-top:1px solid var(--border-color);padding-top:0.6rem;">📝 ${g.notes}</div>` : ''}
+
+            <!-- Timeline section -->
+            <div class="goal-timeline">
+                <div class="goal-timeline-title" id="tl-title-${g.id}" onclick="toggleTimeline('${g.id}')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    Goal History & Timeline
+                </div>
+                <div class="goal-timeline-body" id="tl-body-${g.id}">
+                    <div class="goal-stat-chips">${chips.join('')}</div>
+                    <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text-gray);margin-bottom:6px;">Payment Log</div>
+                    <div class="payment-history">${paymentRows}</div>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+// ── Load Data ──────────────────────────────────────────────
+async function loadGoalData() {
+    try {
+        const goals = await FinFlow.Goals.getAll();
+        allGoals = goals || [];
+
+        const totalSaved     = allGoals.reduce((s, g) => s + (parseFloat(g.current_amount) || 0), 0);
+        const totalTarget    = allGoals.reduce((s, g) => s + (parseFloat(g.target_amount)  || 0), 0);
+        const totalRemaining = Math.max(totalTarget - totalSaved, 0);
+
+        document.getElementById('totalSaved').textContent     = '₹' + totalSaved.toLocaleString('en-IN');
+        document.getElementById('totalTarget').textContent    = '₹' + totalTarget.toLocaleString('en-IN');
+        document.getElementById('totalRemaining').textContent = '₹' + totalRemaining.toLocaleString('en-IN');
+
+        renderGoalCards(allGoals);
+    } catch(err) {
+        console.error('Failed to load goals:', err);
+        FinFlow.Toast.error('Failed to load goals.');
+    }
+}
+
+// ── Confetti ───────────────────────────────────────────────
+function launchConfetti() {
+    const colours = ['#f59e0b','#28a745','#4f46e5','#dc2626','#0891b2','#f97316'];
+    for (let i = 0; i < 120; i++) {
+        const el = document.createElement('div');
+        el.className = 'confetti-piece';
+        el.style.cssText = `left:${Math.random()*100}vw;top:-10px;background:${colours[Math.floor(Math.random()*colours.length)]};width:${6+Math.random()*8}px;height:${6+Math.random()*8}px;animation-duration:${1.5+Math.random()*2.5}s;animation-delay:${Math.random()*0.8}s;border-radius:${Math.random()>0.5?'50%':'2px'};`;
+        document.body.appendChild(el);
+        el.addEventListener('animationend', () => el.remove());
+    }
+}
+
+loadGoalData();
+</script>
+</body>
+</html>

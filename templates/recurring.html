@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recurring - TRAKN</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="icon" type="image/png" href="/static/images/favicon.png">
+    <style>
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        @media (max-width: 700px) { .summary-grid { grid-template-columns: 1fr; } }
+        .summary-mini {
+            border-radius: 14px;
+            padding: 1.2rem 1.4rem;
+            display: flex; flex-direction: column; gap: 4px;
+        }
+        .summary-mini .s-label { font-size: 0.75rem; color: rgba(255,255,255,0.75); text-transform: uppercase; letter-spacing:.05em; }
+        .summary-mini .s-value { font-size: 1.6rem; font-weight: 800; color: #fff; }
+        .summary-mini .s-sub   { font-size: 0.78rem; color: rgba(255,255,255,0.6); }
+
+        .due-alert {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            border-radius: 12px; padding: 1rem 1.2rem;
+            margin-bottom: 1.5rem; display: none;
+            align-items: center; gap: 1rem; color: #fff;
+        }
+        .due-alert.visible { display: flex; }
+        .due-alert h4 { margin: 0 0 0.25rem; font-size: 1rem; }
+        .due-alert p  { margin: 0; font-size: 0.85rem; opacity: 0.9; }
+        .due-alert button {
+            margin-left: auto; background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.4);
+            color: #fff; border-radius: 8px; padding: 0.5rem 1rem;
+            cursor: pointer; font-weight: 600; white-space: nowrap;
+        }
+        .due-alert button:hover { background: rgba(255,255,255,0.35); }
+
+        /* ── Rec item layout ── */
+        .rec-item {
+            background: var(--bg-white);
+            border: 1px solid var(--border-color);
+            border-radius: 14px; padding: 1rem 1.2rem;
+            margin-bottom: .75rem;
+            display: flex; align-items: flex-start; gap: 14px;
+            transition: box-shadow .15s;
+        }
+        .rec-item:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+        .rec-item.paused { opacity: .55; }
+
+        .rec-icon {
+            width: 44px; height: 44px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem; font-weight: 700; color: #fff; flex-shrink: 0;
+            margin-top: 2px;
+        }
+        .rec-body { flex: 1; min-width: 0; }
+        .rec-title { font-weight: 700; font-size: .98rem; color: var(--text-primary); margin-bottom: 4px; }
+        .rec-meta  {
+            font-size: .78rem; color: var(--text-secondary);
+            display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+            margin-bottom: 10px;
+        }
+
+        /* ── Date chips ── */
+        .rec-dates {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+            margin-top: 2px;
+        }
+        .date-chip {
+            display: inline-flex;
+            flex-direction: column;
+            gap: 2px;
+            border-radius: 9px;
+            padding: 5px 10px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-light);
+            min-width: 90px;
+        }
+        .chip-label {
+            font-size: .6rem;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            font-weight: 700;
+            color: var(--text-gray);
+        }
+        .chip-value {
+            font-size: .78rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        /* Start date — neutral */
+        .date-chip.chip-start { background: var(--bg-light); border-color: var(--border-color); }
+        .date-chip.chip-start .chip-label { color: var(--text-gray); }
+
+        /* Upcoming — blue */
+        .date-chip.chip-upcoming { background: #eef2ff; border-color: #a5b4fc; }
+        .date-chip.chip-upcoming .chip-label { color: #4338ca; }
+        .date-chip.chip-upcoming .chip-value { color: #3730a3; }
+
+        /* End date — amber */
+        .date-chip.chip-end { background: #fffbeb; border-color: #fcd34d; }
+        .date-chip.chip-end .chip-label { color: #b45309; }
+        .date-chip.chip-end .chip-value { color: #92400e; }
+
+        /* Last posted — green */
+        .date-chip.chip-last { background: #d1fae5; border-color: #6ee7b7; }
+        .date-chip.chip-last .chip-label { color: #065f46; }
+        .date-chip.chip-last .chip-value { color: #065f46; }
+
+        /* Null/Never — muted */
+        .date-chip.chip-null .chip-value { color: var(--text-gray); font-weight: 500; font-style: italic; }
+
+        /* ── Due status badges ── */
+        .rec-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            border-radius: 99px;
+            padding: 3px 11px;
+            font-size: .72rem;
+            font-weight: 700;
+            line-height: 1.6;
+            white-space: nowrap;
+        }
+        /* Active / far away */
+        .badge-active   { background: #d1fae5; color: #065f46; }
+        /* Paused */
+        .badge-paused   { background: #fef3c7; color: #92400e; }
+        /* 3 days left */
+        .badge-3days    { background: #ede9fe; color: #5b21b6; }
+        /* 2 days left */
+        .badge-2days    { background: #ddd6fe; color: #4c1d95; }
+        /* 1 day left */
+        .badge-1day     { background: #fef3c7; color: #92400e; border: 1px solid #fbbf24; }
+        /* Due today */
+        .badge-today    { background: #f59e0b; color: #fff; animation: pulse 1.4s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.75} }
+        /* Deadline passed */
+        .badge-passed   {
+            background: #fee2e2; color: #991b1b;
+            border: 1px dashed #f87171;
+            font-size: .7rem;
+        }
+
+        .rec-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0; }
+        .rec-amount { font-size: 1.05rem; font-weight: 700; }
+        .rec-amount.income  { color: var(--green-income,#28a745); }
+        .rec-amount.expense { color: var(--red-expense,#dc3545); }
+
+        .rec-actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; justify-content: flex-end; }
+
+        .btn-post {
+            display: inline-flex; align-items: center; gap: 4px;
+            border: none; border-radius: 8px; padding: 5px 11px;
+            font-size: .78rem; font-weight: 700; cursor: pointer;
+            transition: opacity .15s; color: #fff; white-space: nowrap;
+        }
+        .btn-post:hover   { opacity: .82; }
+        .btn-post:disabled{ opacity: .45; cursor: not-allowed; }
+        .btn-post.income  { background: var(--green-income,#28a745); }
+        .btn-post.expense { background: var(--red-expense,#dc3545); }
+
+        .btn-toggle {
+            background: none; border: 1px solid var(--border-color);
+            border-radius: 8px; padding: 5px 10px; font-size: .75rem;
+            font-weight: 600; cursor: pointer; color: var(--text-secondary);
+            transition: all .15s;
+        }
+        .btn-toggle:hover { background: var(--bg-light); }
+
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,.5);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1000; padding: 1rem; backdrop-filter: blur(3px);
+        }
+        .modal-box {
+            background: var(--bg-white); border-radius: 16px;
+            padding: 1.8rem; width: 100%; max-width: 420px;
+            box-shadow: 0 20px 60px rgba(0,0,0,.2);
+            animation: modalIn .22s ease;
+        }
+        @keyframes modalIn { from{transform:translateY(16px);opacity:0} to{transform:translateY(0);opacity:1} }
+        .modal-box h2 { font-size: 1.1rem; font-weight: 700; margin: 0 0 1.2rem; }
+        .modal-strip {
+            background: var(--bg-light); border-radius: 10px;
+            padding: .9rem 1rem; margin-bottom: 1.1rem;
+            display: grid; grid-template-columns: 1fr 1fr; gap: .5rem .8rem;
+        }
+        .ms-item { display: flex; flex-direction: column; gap: 2px; }
+        .ms-label { font-size: .68rem; color: var(--text-gray); text-transform: uppercase; letter-spacing: .04em; }
+        .ms-value { font-size: .95rem; font-weight: 700; }
+        .ms-value.green { color: var(--green-income,#28a745); }
+        .ms-value.red   { color: var(--red-expense,#dc3545); }
+
+        .rec-empty { padding: 2.5rem 1rem; text-align: center; color: var(--text-gray); }
+        .rec-empty p { margin: 0; font-size: .9rem; }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo"><span class="fin">TRAK</span><span class="flow">N</span></div>
+        </div>
+        <nav class="sidebar-nav">
+            <span class="nav-section-title">Main</span>
+            <a href="/dashboard.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>Dashboard</a>
+            <a href="/transactions.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="7" x2="19" y2="7"></line><line x1="5" y1="11" x2="16" y2="11"></line><path d="M5 7c6 0 7 4 7 6s-2 4-7 4"></path><line x1="10" y1="15" x2="17" y2="21"></line></svg>Transactions</a>
+            <a href="/income.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>Income</a>
+            <a href="/expense.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="8" y1="12" x2="16" y2="12"></line></svg>Expenses</a>
+            <a href="/budget.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>Budgets</a>
+            <a href="/recurring.html" class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>Recurring</a>
+            <a href="/goals.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>Goals</a>
+            <a href="/networth.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"></rect><path d="M16 12h4"></path><circle cx="16" cy="12" r="1"></circle></svg>Net Worth</a>
+            <span class="nav-section-title">Insights</span>
+            <a href="/analytics.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>Analytics</a>
+            <a href="/calculator.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><circle cx="8" cy="11" r="1"></circle><circle cx="12" cy="11" r="1"></circle><circle cx="16" cy="11" r="1"></circle><circle cx="8" cy="15" r="1"></circle><circle cx="12" cy="15" r="1"></circle><circle cx="16" cy="15" r="1"></circle></svg>Calculator</a>
+            <a href="/news.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"></rect><line x1="7" y1="8" x2="17" y2="8"></line><line x1="7" y1="12" x2="17" y2="12"></line><line x1="7" y1="16" x2="13" y2="16"></line><line x1="4" y1="4" x2="4" y2="20"></line></svg>News</a>
+            <a href="/import.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>Import</a>
+            <a href="/feedback.html" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z">
+                        </path>
+                    </svg>
+                    Feedback
+                </a>
+            <span class="nav-section-title">Settings</span>
+            <a href="/admin.html" class="nav-item admin-link" style="display:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>Admin</a>
+            <a href="/profile.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>Profile</a>
+            <a href="#" class="nav-item" data-logout><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>Sign Out</a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="page-header">
+            <div class="header-left">
+                <h1>Recurring Transactions</h1>
+                <p id="currentMonth"></p>
+            </div>
+            <div class="header-right">
+                <button class="theme-toggle" data-theme-toggle>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                    <span>Dark</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="due-alert" id="dueAlert">
+            <div style="font-size:1.5rem;">⏰</div>
+            <div>
+                <h4 id="dueAlertTitle">Items Due Today</h4>
+                <p id="dueAlertText">You have recurring items due today.</p>
+            </div>
+            <button onclick="scrollToList()">View Items ↓</button>
+        </div>
+
+        <div class="summary-grid">
+            <div class="summary-mini" style="background:linear-gradient(135deg,#e53e3e,#c53030);">
+                <div class="s-label">Monthly Expenses</div>
+                <div class="s-value" id="totalExpense">₹0</div>
+                <div class="s-sub" id="expenseCount">0 active items</div>
+            </div>
+            <div class="summary-mini" style="background:linear-gradient(135deg,#28a745,#1a6b2a);">
+                <div class="s-label">Monthly Income</div>
+                <div class="s-value" id="totalIncome">₹0</div>
+                <div class="s-sub" id="incomeCount">0 active items</div>
+            </div>
+            <div class="summary-mini" style="background:linear-gradient(135deg,#4f46e5,#7c3aed);">
+                <div class="s-label">Net Monthly</div>
+                <div class="s-value" id="netMonthly">₹0</div>
+                <div class="s-sub" id="activeCount">0 total recurring</div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-bottom:1.5rem;">
+            <div class="card-header">
+                <h3 class="card-title">By Category</h3>
+                <span id="catBadge" style="font-size:.8rem;color:var(--text-gray);"></span>
+            </div>
+            <div id="categoryList">
+                <div class="rec-empty"><p>No recurring transactions yet</p></div>
+            </div>
+        </div>
+
+        <div class="form-page">
+            <div class="form-card">
+                <h2 id="formTitle">Add New Recurring Transaction</h2>
+                <form id="recurringForm">
+                    <input type="hidden" id="editId" value="">
+                    <div class="form-group">
+                        <label for="title">Title</label>
+                        <input type="text" id="title" name="title" class="form-control" placeholder="e.g., Monthly Rent" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="amount">Amount (₹)</label>
+                            <input type="number" id="amount" name="amount" class="form-control" placeholder="0.00" step="0.01" min="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="type">Type</label>
+                            <select id="type" name="type" class="form-select" required>
+                                <option value="expense">Expense</option>
+                                <option value="income">Income</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="frequency">Frequency</label>
+                            <select id="frequency" name="frequency" class="form-select" required>
+                                <option value="">Select frequency</option>
+                                <option value="daily">Daily</option>
+                                <option value="weekly">Weekly</option>
+                                <option value="monthly">Monthly</option>
+                                <option value="yearly">Yearly</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="category">Category</label>
+                            <select id="category" name="category" class="form-select" required>
+                                <option value="">Select a category</option>
+                                <option value="bills">Bills & Utilities</option>
+                                <option value="food">Food & Dining</option>
+                                <option value="transport">Transport</option>
+                                <option value="shopping">Shopping</option>
+                                <option value="entertainment">Entertainment</option>
+                                <option value="health">Health & Medical</option>
+                                <option value="salary">Salary</option>
+                                <option value="investment">Investment</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="startDate">Start Date</label>
+                            <input type="date" id="startDate" name="startDate" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="endDate">End Date <span style="font-weight:400;color:var(--text-gray);">(Optional)</span></label>
+                            <input type="date" id="endDate" name="endDate" class="form-control">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="notes">Notes (Optional)</label>
+                        <textarea id="notes" name="notes" class="form-control" rows="2" placeholder="Add any additional notes..."></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" id="cancelBtn" class="btn btn-secondary">Cancel</button>
+                        <button type="submit" id="submitBtn" class="btn btn-primary">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                            Add Recurring
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top:1.5rem;" id="recurringListCard">
+            <div class="card-header">
+                <h3 class="card-title">All Recurring Items</h3>
+                <span id="listCount" style="font-size:.8rem;color:var(--text-gray);"></span>
+            </div>
+            <div id="recurringList" style="padding:.5rem 0;">
+                <div class="rec-empty"><p>No recurring transactions yet. Add one above.</p></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Post Modal -->
+    <div class="modal-overlay" id="postModal" style="display:none;">
+        <div class="modal-box">
+            <h2>📌 Post to Transactions</h2>
+            <div class="modal-strip">
+                <div class="ms-item"><span class="ms-label">Title</span><span class="ms-value" id="pmTitle">—</span></div>
+                <div class="ms-item"><span class="ms-label">Type</span><span class="ms-value" id="pmType">—</span></div>
+                <div class="ms-item"><span class="ms-label">Category</span><span class="ms-value" id="pmCategory">—</span></div>
+                <div class="ms-item"><span class="ms-label">Amount</span><span class="ms-value" id="pmAmount">₹0</span></div>
+            </div>
+            <div class="form-group">
+                <label for="postDate">Transaction Date</label>
+                <input type="date" id="postDate" class="form-control">
+                <div style="font-size:.78rem;color:var(--text-gray);margin-top:4px;">
+                    This will appear in Transactions, Dashboard, Income &amp; Expenses pages.
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="postNotes">Notes (Optional)</label>
+                <input type="text" id="postNotes" class="form-control" placeholder="e.g., May payment">
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="cancelPost">Cancel</button>
+                <button type="button" id="confirmPost" class="btn btn-primary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    Post Transaction
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/app.js"></script>
+<script>
+if (localStorage.getItem('trakn-is-admin') === 'true') {
+    const al = document.querySelector('.admin-link');
+    if (al) al.style.display = 'flex';
+}
+
+let allItems     = [];
+let postTargetId = null;
+
+const fmt      = n => FinFlow.Utils.formatCurrency(n);
+const capFirst = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
+
+// ── Safe date formatter: YYYY-MM-DD → "6 May 2026" ─────────
+function formatDateSafe(dateStr) {
+    if (!dateStr) return null;
+    const match = String(dateStr).match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (!match) return null;
+    const [, y, m, d] = match.map(Number);
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${d} ${months[m - 1]} ${y}`;
+}
+
+// ── Robust cleanDateStr: handles ISO, timestamps, etc. ─────
+function cleanDateStr(val) {
+    if (val === null || val === undefined || val === '') return '';
+    const str = String(val).trim();
+    if (!str || str === 'None' || str === 'null') return '';
+    // Numeric timestamp
+    if (/^\d{10,}$/.test(str)) {
+        const d = new Date(parseInt(str));
+        if (!isNaN(d)) return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+    // Extract YYYY-MM-DD from any string (handles ISO with time)
+    const match = str.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (match) return `${match[1]}-${match[2]}-${match[3]}`;
+    // DD-MM-YYYY
+    const dmy = str.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+    if (dmy) return `${dmy[3]}-${dmy[2].padStart(2,'0')}-${dmy[1].padStart(2,'0')}`;
+    return '';
+}
+
+// ── Normalize DB item ──────────────────────────────────────
+function normalizeItem(item) {
+    return {
+        id:          item.id,
+        user_id:     item.user_id,
+        title:       item.title       || '',
+        amount:      parseFloat(item.amount) || 0,
+        type:        item.type        || 'expense',
+        frequency:   item.frequency   || 'monthly',
+        category:    item.category    || 'other',
+        start_date:  cleanDateStr(item.start_date  || item.startDate),
+        end_date:    cleanDateStr(item.end_date    || item.endDate),
+        notes:       item.notes       || '',
+        is_active:   item.is_active !== undefined ? Number(item.is_active) : 1,
+        last_posted: cleanDateStr(item.last_posted) || null,
+    };
+}
+
+const CAT_COLORS = {
+    bills:'#6366f1', food:'#f59e0b', transport:'#0d9488',
+    shopping:'#ec4899', entertainment:'#8b5cf6', health:'#10b981',
+    salary:'#28a745', investment:'#3b82f6', other:'#94a3b8'
+};
+const catColor = c => CAT_COLORS[c] || '#94a3b8';
+
+// ── Date object → YYYY-MM-DD ───────────────────────────────
+function dateToStr(d) {
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// ── Compute today's midnight anchor ───────────────────────
+function todayAnchor() {
+    const t = new Date();
+    t.setHours(12, 0, 0, 0);
+    return t;
+}
+
+// ──────────────────────────────────────────────────────────
+// nextDue: returns the NEXT occurrence that is:
+//   (a) strictly AFTER last_posted (posting always advances the date)
+//   (b) on or after today
+// ──────────────────────────────────────────────────────────
+function nextDue(startDateStr, frequency, lastPostedStr) {
+    if (!startDateStr) return null;
+    const clean = cleanDateStr(startDateStr);
+    if (!clean) return null;
+    const parts = clean.split('-').map(Number);
+    if (parts.length !== 3 || isNaN(parts[0])) return null;
+    const [y, m, d] = parts;
+
+    let date = new Date(y, m - 1, d, 12, 0, 0);
+    const now = todayAnchor();
+
+    // Build "must be after" anchor = later of (today, last_posted)
+    let afterAnchor = new Date(now);
+    if (lastPostedStr) {
+        const lp = cleanDateStr(lastPostedStr);
+        if (lp) {
+            const [ly, lm, ld] = lp.split('-').map(Number);
+            const lpDate = new Date(ly, lm - 1, ld, 12, 0, 0);
+            if (lpDate > afterAnchor) afterAnchor = lpDate;
+        }
+    }
+
+    // Advance until date is STRICTLY after the anchor
+    while (date <= afterAnchor) {
+        switch (frequency) {
+            case 'daily':   date.setDate(date.getDate() + 1);         break;
+            case 'weekly':  date.setDate(date.getDate() + 7);         break;
+            case 'monthly': date.setMonth(date.getMonth() + 1);       break;
+            case 'yearly':  date.setFullYear(date.getFullYear() + 1); break;
+            default: return null;
+        }
+    }
+    return date;
+}
+
+// ──────────────────────────────────────────────────────────
+// lastDue: returns the most recent occurrence BEFORE today
+// that has NOT yet been covered by last_posted.
+// ──────────────────────────────────────────────────────────
+function lastDue(startDateStr, frequency, lastPostedStr) {
+    if (!startDateStr) return null;
+    const clean = cleanDateStr(startDateStr);
+    if (!clean) return null;
+    const parts = clean.split('-').map(Number);
+    if (parts.length !== 3 || isNaN(parts[0])) return null;
+    const [y, m, d] = parts;
+
+    let date = new Date(y, m - 1, d, 12, 0, 0);
+    const now = todayAnchor();
+
+    // If start is today or in future, no past due exists
+    if (date >= now) return null;
+
+    // Find the most recent past occurrence
+    let prev = new Date(date);
+    while (true) {
+        let next = new Date(prev);
+        switch (frequency) {
+            case 'daily':   next.setDate(next.getDate() + 1);         break;
+            case 'weekly':  next.setDate(next.getDate() + 7);         break;
+            case 'monthly': next.setMonth(next.getMonth() + 1);       break;
+            case 'yearly':  next.setFullYear(next.getFullYear() + 1); break;
+            default: return null;
+        }
+        if (next >= now) {
+            // Only treat as missed if last_posted doesn't cover this occurrence
+            if (lastPostedStr) {
+                const lp = cleanDateStr(lastPostedStr);
+                if (lp) {
+                    const prevStr = dateToStr(prev);
+                    if (lp >= prevStr) return null; // already posted for this cycle
+                }
+            }
+            return prev;
+        }
+        prev = next;
+    }
+}
+
+// ──────────────────────────────────────────────────────────
+// dueBadge: the status pill shown in rec-meta.
+//   diff < 0  → impossible (nextDue >= now), but handle for safety
+//   diff = 0  → Due Today  ⚡ (pulsing amber)
+//   diff = 1  → 1 day left 🕐
+//   diff = 2  → 2 days left 🕑
+//   diff = 3  → 3 days left 🕒
+//   diff > 3  → Next: date  (green)
+//   PLUS: if lastDue exists and is before today → show "Deadline passed" warning too
+// ──────────────────────────────────────────────────────────
+function dueBadge(item) {
+    if (!item.is_active) return '<span class="rec-badge badge-paused">⏸ Paused</span>';
+
+    const nd  = nextDue(item.start_date, item.frequency, item.last_posted);
+    const ld  = lastDue(item.start_date, item.frequency, item.last_posted);
+    const now = todayAnchor();
+
+    let badges = '';
+
+    // ── Missed / deadline passed badge ────────────────────
+    // Show if there's a past occurrence that hasn't been posted yet,
+    // or if last_posted is older than lastDue.
+    if (ld) {
+        const ldStr = dateToStr(ld);
+        const alreadyPosted = item.last_posted && item.last_posted >= ldStr;
+        if (!alreadyPosted) {
+            const ldFmt = formatDateSafe(ldStr) || ldStr;
+            badges += `<span class="rec-badge badge-passed">⚠ Deadline passed (${ldFmt}) — you can still Post</span>`;
+        }
+    }
+
+    // ── Upcoming badge ─────────────────────────────────────
+    if (nd) {
+        const diff = Math.round((nd - now) / 86400000);
+        const ndFmt = formatDateSafe(dateToStr(nd)) || dateToStr(nd);
+
+        if (diff === 0) {
+            badges += `<span class="rec-badge badge-today">⚡ Due Today</span>`;
+        } else if (diff === 1) {
+            badges += `<span class="rec-badge badge-1day">🕐 1 day left · ${ndFmt}</span>`;
+        } else if (diff === 2) {
+            badges += `<span class="rec-badge badge-2days">🕑 2 days left · ${ndFmt}</span>`;
+        } else if (diff === 3) {
+            badges += `<span class="rec-badge badge-3days">🕒 3 days left · ${ndFmt}</span>`;
+        } else {
+            badges += `<span class="rec-badge badge-active">Next: ${ndFmt}</span>`;
+        }
+    }
+
+    return badges || '<span class="rec-badge badge-active">Active</span>';
+}
+
+// ── Alert banner for due-today items ──────────────────────
+function checkDueToday() {
+    const now    = todayAnchor();
+    const dueNow = allItems.filter(i => {
+        if (!i.is_active) return false;
+        const nd = nextDue(i.start_date, i.frequency, i.last_posted);
+        if (!nd) return false;
+        return Math.round((nd - now) / 86400000) === 0;
+    });
+    const alertEl = document.getElementById('dueAlert');
+    if (dueNow.length > 0) {
+        alertEl.classList.add('visible');
+        document.getElementById('dueAlertTitle').textContent =
+            `${dueNow.length} Item${dueNow.length > 1 ? 's' : ''} Due Today!`;
+        document.getElementById('dueAlertText').textContent =
+            dueNow.map(i => i.title).join(', ') + ' — post them to update your transactions.';
+    } else {
+        alertEl.classList.remove('visible');
+    }
+}
+
+function scrollToList() {
+    document.getElementById('recurringListCard').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ── Form ───────────────────────────────────────────────────
+const form      = document.getElementById('recurringForm');
+const formTitle = document.getElementById('formTitle');
+const submitBtn = document.getElementById('submitBtn');
+const editIdEl  = document.getElementById('editId');
+
+document.getElementById('startDate').value = FinFlow.Utils.todayStr();
+document.getElementById('cancelBtn').addEventListener('click', resetForm);
+
+function resetForm() {
+    form.reset();
+    document.getElementById('startDate').value = FinFlow.Utils.todayStr();
+    document.getElementById('endDate').value   = '';
+    editIdEl.value        = '';
+    formTitle.textContent = 'Add New Recurring Transaction';
+    submitBtn.innerHTML   = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Add Recurring';
+}
+
+form.addEventListener('submit', async e => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const payload = {
+        title:     fd.get('title').trim(),
+        amount:    parseFloat(fd.get('amount')),
+        type:      fd.get('type'),
+        frequency: fd.get('frequency'),
+        category:  fd.get('category'),
+        startDate: fd.get('startDate'),
+        endDate:   fd.get('endDate') || null,
+        notes:     fd.get('notes') || ''
+    };
+    if (!payload.title || !payload.amount || !payload.frequency || !payload.category || !payload.startDate) {
+        FinFlow.Toast.error('Please fill all required fields');
+        return;
+    }
+    const editId   = editIdEl.value;
+    const origHTML = submitBtn.innerHTML;
+    submitBtn.disabled    = true;
+    submitBtn.textContent = editId ? 'Updating...' : 'Adding...';
+    try {
+        if (editId) {
+            await FinFlow.Recurring.update(editId, payload);
+            FinFlow.Toast.success('Recurring item updated!');
+        } else {
+            await FinFlow.Recurring.create(payload);
+            FinFlow.Toast.success('Recurring item added!');
+        }
+        resetForm();
+        await loadData();
+    } catch(err) {
+        FinFlow.Toast.error(err.message || 'Failed to save');
+    } finally {
+        submitBtn.disabled  = false;
+        submitBtn.innerHTML = origHTML;
+    }
+});
+
+// ── Post Modal ─────────────────────────────────────────────
+const postModal = document.getElementById('postModal');
+
+function openPostModal(id) {
+    const item = allItems.find(i => String(i.id) === String(id));
+    if (!item) { FinFlow.Toast.error('Could not find item — try refreshing.'); return; }
+
+    // ── Already posted for this cycle? Show friendly message ──
+    if (item.last_posted) {
+        const nd = nextDue(item.start_date, item.frequency, item.last_posted);
+        const ndStr = nd ? (formatDateSafe(dateToStr(nd)) || dateToStr(nd)) : null;
+        const lpFmt = formatDateSafe(item.last_posted) || item.last_posted;
+        // If last_posted >= today's date string, warn user
+        const todayStr = FinFlow.Utils.todayStr();
+        if (item.last_posted >= todayStr) {
+            const msg = ndStr
+                ? `You already posted this on ${lpFmt}. Next due date is ${ndStr}.`
+                : `You already posted this on ${lpFmt}.`;
+            FinFlow.Toast.error('⚠ ' + msg);
+            return; // don't open modal
+        }
+    }
+
+    postTargetId = String(item.id);
+    document.getElementById('pmTitle').textContent    = item.title;
+    document.getElementById('pmType').textContent     = capFirst(item.type);
+    document.getElementById('pmCategory').textContent = capFirst(item.category || 'other');
+    const amtEl = document.getElementById('pmAmount');
+    amtEl.textContent = fmt(item.amount);
+    amtEl.className   = 'ms-value ' + (item.type === 'income' ? 'green' : 'red');
+    const confirmBtn = document.getElementById('confirmPost');
+    const btnColor   = item.type === 'income' ? '#28a745' : '#dc3545';
+    confirmBtn.style.background  = btnColor;
+    confirmBtn.style.borderColor = btnColor;
+    document.getElementById('postDate').value  = FinFlow.Utils.todayStr();
+    document.getElementById('postNotes').value = '';
+    postModal.style.display = 'flex';
+}
+
+function closePostModal() {
+    postModal.style.display = 'none';
+    postTargetId = null;
+}
+
+postModal.addEventListener('click', e => { if (e.target === postModal) closePostModal(); });
+document.getElementById('cancelPost').addEventListener('click', closePostModal);
+
+document.getElementById('confirmPost').addEventListener('click', async () => {
+    const item = allItems.find(i => String(i.id) === String(postTargetId));
+    if (!item) { FinFlow.Toast.error('Could not find item — try refreshing.'); return; }
+    const txDate  = document.getElementById('postDate').value;
+    const txNotes = document.getElementById('postNotes').value.trim();
+    if (!txDate) { FinFlow.Toast.error('Please select a date.'); return; }
+    const btn      = document.getElementById('confirmPost');
+    const origHTML = btn.innerHTML;
+    btn.disabled   = true;
+    btn.textContent = 'Posting...';
+    try {
+        await FinFlow.Transactions.create({
+            title:    item.title,
+            amount:   item.amount,
+            type:     item.type,
+            category: item.category || 'other',
+            date:     txDate,
+            notes:    txNotes || `Recurring: ${capFirst(item.frequency)} · ${item.title}`
+        });
+        await FinFlow.Recurring.update(item.id, {
+            title:       item.title,
+            amount:      item.amount,
+            type:        item.type,
+            frequency:   item.frequency,
+            category:    item.category,
+            startDate:   item.start_date,
+            endDate:     item.end_date || null,
+            notes:       item.notes,
+            isActive:    item.is_active,
+            last_posted: txDate
+        });
+        FinFlow.Toast.success(`✅ Posted to ${item.type === 'income' ? 'Income' : 'Expenses'}!`);
+        closePostModal();
+        await loadData();
+    } catch(err) {
+        FinFlow.Toast.error(err.message || 'Failed to post');
+    } finally {
+        btn.disabled  = false;
+        btn.innerHTML = origHTML;
+    }
+});
+
+// ── Toggle Pause / Resume ──────────────────────────────────
+async function toggleActive(id) {
+    const item = allItems.find(i => String(i.id) === String(id));
+    if (!item) return;
+    const newActive = item.is_active ? 0 : 1;
+    try {
+        await FinFlow.Recurring.update(item.id, {
+            title:     item.title,
+            amount:    item.amount,
+            type:      item.type,
+            frequency: item.frequency,
+            category:  item.category,
+            startDate: item.start_date,
+            endDate:   item.end_date || null,
+            notes:     item.notes || '',
+            isActive:  newActive
+        });
+        FinFlow.Toast.success(newActive ? 'Item resumed ▶' : 'Item paused ⏸');
+        await loadData();
+    } catch(err) {
+        FinFlow.Toast.error('Failed to update item.');
+    }
+}
+
+// ── Edit ───────────────────────────────────────────────────
+function editItem(id) {
+    const item = allItems.find(i => String(i.id) === String(id));
+    if (!item) { FinFlow.Toast.error('Could not find item — try refreshing.'); return; }
+    editIdEl.value        = item.id;
+    formTitle.textContent = 'Edit Recurring Transaction';
+    submitBtn.innerHTML   = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Update Item';
+    document.getElementById('title').value     = item.title;
+    document.getElementById('amount').value    = item.amount;
+    document.getElementById('type').value      = item.type;
+    document.getElementById('frequency').value = item.frequency;
+    document.getElementById('category').value  = item.category;
+    document.getElementById('startDate').value = item.start_date;
+    document.getElementById('endDate').value   = item.end_date || '';
+    document.getElementById('notes').value     = item.notes || '';
+    form.scrollIntoView({ behavior: 'smooth' });
+}
+
+// ── Delete ─────────────────────────────────────────────────
+async function deleteItem(id) {
+    if (!confirm('Delete this recurring item? This cannot be undone.')) return;
+    try {
+        await FinFlow.Recurring.delete(id);
+        FinFlow.Toast.success('Item deleted.');
+        await loadData();
+    } catch(err) {
+        FinFlow.Toast.error('Failed to delete item.');
+    }
+}
+
+// ── Load + Render ──────────────────────────────────────────
+async function loadData() {
+    try {
+        const raw = await FinFlow.Recurring.getAll() || [];
+        allItems  = raw.map(normalizeItem);
+        renderSummary();
+        renderCategories();
+        renderList();
+        checkDueToday();
+    } catch(err) {
+        console.error('Failed to load recurring:', err);
+        FinFlow.Toast.error('Failed to load recurring items');
+    }
+}
+
+function renderSummary() {
+    const active  = allItems.filter(i => i.is_active);
+    const expense = active.filter(i => i.type === 'expense');
+    const income  = active.filter(i => i.type === 'income');
+    const totalExp = expense.reduce((s, i) => s + i.amount, 0);
+    const totalInc = income.reduce((s, i)  => s + i.amount, 0);
+    const net      = totalInc - totalExp;
+    document.getElementById('totalExpense').textContent = fmt(totalExp);
+    document.getElementById('totalIncome').textContent  = fmt(totalInc);
+    document.getElementById('netMonthly').textContent   = (net < 0 ? '-' : '') + fmt(Math.abs(net));
+    document.getElementById('expenseCount').textContent = `${expense.length} active item${expense.length !== 1 ? 's' : ''}`;
+    document.getElementById('incomeCount').textContent  = `${income.length} active item${income.length !== 1 ? 's' : ''}`;
+    document.getElementById('activeCount').textContent  = `${allItems.length} total recurring`;
+}
+
+function renderCategories() {
+    const catList = document.getElementById('categoryList');
+    const badgeEl = document.getElementById('catBadge');
+    if (!allItems.length) {
+        catList.innerHTML   = '<div class="rec-empty"><p>No recurring transactions yet</p></div>';
+        badgeEl.textContent = '';
+        return;
+    }
+    const cats     = {};
+    const totalAbs = allItems.reduce((s, i) => s + i.amount, 0);
+    allItems.forEach(item => {
+        const cat = item.category || 'other';
+        if (!cats[cat]) cats[cat] = { income: 0, expense: 0, count: 0 };
+        if (item.type === 'income') cats[cat].income  += item.amount;
+        else                        cats[cat].expense += item.amount;
+        cats[cat].count++;
+    });
+    badgeEl.textContent = Object.keys(cats).length + ' categories';
+    catList.innerHTML   = '';
+    Object.entries(cats)
+        .sort((a, b) => (b[1].expense + b[1].income) - (a[1].expense + a[1].income))
+        .forEach(([cat, amounts]) => {
+            const net   = amounts.income - amounts.expense;
+            const total = amounts.income + amounts.expense;
+            const pct   = totalAbs > 0 ? (total / totalAbs * 100).toFixed(0) : 0;
+            const color = catColor(cat);
+            const isExp = net < 0;
+            const row = document.createElement('div');
+            row.className = 'category-item';
+            row.innerHTML = `
+                <div class="category-icon" style="background:${color};">${cat.charAt(0).toUpperCase()}</div>
+                <div class="category-info">
+                    <div class="category-name">${capFirst(cat)} <span style="font-size:.75rem;font-weight:400;color:var(--text-gray);">(${amounts.count} item${amounts.count !== 1 ? 's' : ''})</span></div>
+                    <div class="category-progress">
+                        <div class="category-progress-bar" style="width:${pct}%;background:${color};"></div>
+                    </div>
+                </div>
+                <div style="text-align:right;flex-shrink:0;">
+                    <div class="category-amount" style="color:${isExp ? 'var(--red-expense)' : 'var(--green-income)'};">${isExp ? '-' : '+'}${fmt(Math.abs(net))}</div>
+                    <div style="font-size:.7rem;color:var(--text-gray);">${pct}% of total</div>
+                </div>`;
+            catList.appendChild(row);
+        });
+}
+
+// ── Render list ────────────────────────────────────────────
+function renderList() {
+    const container = document.getElementById('recurringList');
+    document.getElementById('listCount').textContent = allItems.length
+        ? `${allItems.length} item${allItems.length !== 1 ? 's' : ''}` : '';
+
+    if (!allItems.length) {
+        container.innerHTML = '<div class="rec-empty"><p>No recurring transactions yet. Add one above.</p></div>';
+        return;
+    }
+
+    container.innerHTML = '';
+    const sorted = [...allItems].sort((a, b) => (b.is_active || 0) - (a.is_active || 0));
+
+    sorted.forEach(item => {
+        const isActive = !!item.is_active;
+        const prefix   = item.type === 'expense' ? '-' : '+';
+
+        // ── Compute next upcoming date ─────────────────────
+        const nd = nextDue(item.start_date, item.frequency, item.last_posted);
+        const upcomingStr = nd ? dateToStr(nd) : null;
+
+        // ── Chip 1: Start Date ─────────────────────────────
+        const startFmt = formatDateSafe(item.start_date);
+        const startChip = `
+            <div class="date-chip chip-start">
+                <span class="chip-label">📅 Start Date</span>
+                <span class="chip-value">${startFmt || '—'}</span>
+            </div>`;
+
+        // ── Chip 2: Upcoming Date ──────────────────────────
+        // The next occurrence on/after today based on frequency
+        const upcomingFmt = upcomingStr ? formatDateSafe(upcomingStr) : null;
+        const upcomingChip = `
+            <div class="date-chip chip-upcoming">
+                <span class="chip-label">🔄 Upcoming</span>
+                <span class="chip-value">${upcomingFmt || '—'}</span>
+            </div>`;
+
+        // ── Chip 3: End Date (Null if not set) ────────────
+        const endFmt = item.end_date ? formatDateSafe(item.end_date) : null;
+        const endChip = endFmt
+            ? `<div class="date-chip chip-end">
+                   <span class="chip-label">🏁 End Date</span>
+                   <span class="chip-value">${endFmt}</span>
+               </div>`
+            : `<div class="date-chip chip-null">
+                   <span class="chip-label">🏁 End Date</span>
+                   <span class="chip-value">Null</span>
+               </div>`;
+
+        // ── Chip 4: Last Posted ────────────────────────────
+        const lastFmt = item.last_posted ? formatDateSafe(item.last_posted) : null;
+        const lastChip = lastFmt
+            ? `<div class="date-chip chip-last">
+                   <span class="chip-label">✅ Last Posted</span>
+                   <span class="chip-value">${lastFmt}</span>
+               </div>`
+            : `<div class="date-chip chip-null">
+                   <span class="chip-label">✅ Last Posted</span>
+                   <span class="chip-value">Never</span>
+               </div>`;
+
+        const div = document.createElement('div');
+        div.className = 'rec-item' + (isActive ? '' : ' paused');
+        div.setAttribute('data-id', item.id);
+        div.innerHTML = `
+            <div class="rec-icon" style="background:${catColor(item.category || 'other')};">
+                ${(item.category || 'o').charAt(0).toUpperCase()}
+            </div>
+            <div class="rec-body">
+                <div class="rec-title">${item.title}</div>
+                <div class="rec-meta">
+                    <span>${capFirst(item.frequency)}</span>
+                    <span>·</span>
+                    <span>${capFirst(item.category || 'other')}</span>
+                    ${dueBadge(item)}
+                </div>
+                <div class="rec-dates">
+                    ${startChip}
+                    ${upcomingChip}
+                    ${endChip}
+                    ${lastChip}
+                </div>
+            </div>
+            <div class="rec-right">
+                <div class="rec-amount ${item.type}">${prefix}${fmt(item.amount)}</div>
+                <div class="rec-actions">
+                    <button class="btn-post ${item.type}" data-id="${item.id}" data-action="post"
+                            title="Post as transaction" ${isActive ? '' : 'disabled'}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        Post
+                    </button>
+                    <button class="btn-toggle" data-id="${item.id}" data-action="toggle">
+                        ${isActive ? '⏸ Pause' : '▶ Resume'}
+                    </button>
+                    <button class="table-action-btn" data-id="${item.id}" data-action="edit" title="Edit">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                    </button>
+                    <button class="table-action-btn delete" data-id="${item.id}" data-action="delete" title="Delete">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </button>
+                </div>
+            </div>`;
+        container.appendChild(div);
+    });
+
+    container.onclick = e => {
+        const btn = e.target.closest('[data-action]');
+        if (!btn) return;
+        const id     = btn.dataset.id;
+        const action = btn.dataset.action;
+        if      (action === 'post')   openPostModal(id);
+        else if (action === 'toggle') toggleActive(id);
+        else if (action === 'edit')   editItem(id);
+        else if (action === 'delete') deleteItem(id);
+    };
+}
+
+document.getElementById('currentMonth').textContent =
+    new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+
+loadData();
+</script>
+</body>
+</html>
